@@ -1,8 +1,23 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Dark theme colors - coerenti in tutta l'app */
+  --background: #111827; /* gray-900 */
+  --background-secondary: #1F2937; /* gray-800 */
+  --background-tertiary: #374151; /* gray-700 */
+  --foreground: #ffffff;
+  --foreground-secondary: #D1D5DB; /* gray-300 */
+  --foreground-muted: #9CA3AF; /* gray-400 */
+
+  /* Accent colors */
+  --accent-blue: #3B82F6; /* blue-500 */
+  --accent-purple: #A855F7; /* purple-500 */
+  --accent-green: #22C55E; /* green-500 */
+  --accent-red: #EF4444; /* red-500 */
+
+  /* Borders */
+  --border-primary: rgba(55, 65, 81, 0.5); /* gray-700/50 */
+  --border-light: rgba(255, 255, 255, 0.1); /* white/10 */
 }
 
 @theme inline {
@@ -12,17 +27,11 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
 }
 
 /* Custom scrollbar */
@@ -112,4 +121,105 @@ a:focus-visible {
 
 .pulse-glow {
   animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Responsive utilities */
+@media (max-width: 640px) {
+  /* Mobile optimizations */
+  body {
+    font-size: 14px;
+  }
+
+  /* Reduce padding on mobile */
+  .mobile-padding-sm {
+    padding: 1rem !important;
+  }
+
+  /* Stack flex containers on mobile */
+  .mobile-stack {
+    flex-direction: column !important;
+  }
+
+  /* Full width on mobile */
+  .mobile-full {
+    width: 100% !important;
+  }
+
+  /* Hide on mobile */
+  .mobile-hide {
+    display: none !important;
+  }
+
+  /* Smaller text on mobile */
+  .mobile-text-sm {
+    font-size: 0.875rem !important;
+  }
+
+  /* Reduce gap on mobile */
+  .mobile-gap-sm {
+    gap: 0.5rem !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Tablet optimizations */
+  .tablet-stack {
+    flex-direction: column !important;
+  }
+
+  .tablet-hide {
+    display: none !important;
+  }
+
+  /* Responsive grid columns */
+  .responsive-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+  }
+}
+
+/* Touch-friendly click areas for mobile */
+@media (hover: none) and (pointer: coarse) {
+  button,
+  a,
+  [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Responsive container utilities */
+.container-responsive {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container-responsive {
+    max-width: 640px;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .container-responsive {
+    max-width: 768px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-responsive {
+    max-width: 1024px;
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .container-responsive {
+    max-width: 1280px;
+  }
 }
