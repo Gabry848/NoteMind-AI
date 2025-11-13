@@ -11,7 +11,7 @@ interface DocumentsState {
   isLoading: boolean;
   error: string | null;
   fetchDocuments: () => Promise<void>;
-  uploadDocument: (file: File) => Promise<Document>;
+  uploadDocument: (file: File, folderId?: number) => Promise<Document>;
   deleteDocument: (id: number) => Promise<void>;
   selectDocument: (document: Document | null) => void;
 }
@@ -35,10 +35,10 @@ export const useDocumentsStore = create<DocumentsState>((set, get) => ({
     }
   },
 
-  uploadDocument: async (file: File) => {
+  uploadDocument: async (file: File, folderId?: number) => {
     set({ isLoading: true, error: null });
     try {
-      const document = await documentsApi.upload(file);
+      const document = await documentsApi.upload(file, folderId);
       set((state) => ({
         documents: [document, ...state.documents],
         isLoading: false,

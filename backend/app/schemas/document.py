@@ -14,6 +14,7 @@ class DocumentResponse(BaseModel):
     original_filename: str
     file_size: int
     file_type: str
+    folder_id: Optional[int] = None
     status: str
     error_message: Optional[str]
     summary: Optional[str]

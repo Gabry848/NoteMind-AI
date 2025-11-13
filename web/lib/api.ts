@@ -11,6 +11,10 @@ import type {
   Conversation,
   SummaryRequest,
   SummaryResponse,
+  FolderTreeResponse,
+  Folder,
+  FolderCreate,
+  FolderUpdate,
 } from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -66,9 +70,12 @@ export const documents = {
     return response.data;
   },
 
-  upload: async (file: File): Promise<Document> => {
+  upload: async (file: File, folderId?: number): Promise<Document> => {
     const formData = new FormData();
     formData.append("file", file);
+    if (folderId) {
+      formData.append("folder_id", folderId.toString());
+    }
     const response = await api.post("/documents/upload", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
@@ -127,6 +134,33 @@ export const summaries = {
   get: async (documentId: number): Promise<SummaryResponse> => {
     const response = await api.get(`/summaries/${documentId}`);
     return response.data;
+  },
+};
+
+// Folders API
+export const folders = {
+  list: async (): Promise<FolderTreeResponse> => {
+    const response = await api.get("/folders");
+    return response.data;
+  },
+
+  get: async (id: number): Promise<Folder> => {
+    const response = await api.get(`/folders/${id}`);
+    return response.data;
+  },
+
+  create: async (folder: FolderCreate): Promise<Folder> => {
+    const response = await api.post("/folders", folder);
+    return response.data;
+  },
+
+  update: async (id: number, folder: FolderUpdate): Promise<Folder> => {
+    const response = await api.put(`/folders/${id}`, folder);
+    return response.data;
+  },
+
+  delete: async (id: number): Promise<void> => {
+    await api.delete(`/folders/${id}`);
   },
 };
 

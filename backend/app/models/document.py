@@ -14,6 +14,7 @@ class Document(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    folder_id = Column(Integer, ForeignKey("folders.id"), nullable=True)  # Optional folder
     filename = Column(String, nullable=False)
     original_filename = Column(String, nullable=False)
     file_path = Column(String, nullable=False)
@@ -29,6 +30,7 @@ class Document(Base):
 
     # Relationships
     user = relationship("User", back_populates="documents")
+    folder = relationship("Folder", back_populates="documents")
     conversations = relationship("Conversation", back_populates="document", cascade="all, delete-orphan")
 
     def __repr__(self):

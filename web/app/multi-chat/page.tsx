@@ -12,9 +12,10 @@ import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useDocumentsStore } from "@/store/useDocumentsStore";
-import { chat, documents as documentsApi } from "@/lib/api";
+import { chat, documents as documentsApi, folders as foldersApi } from "@/lib/api";
 import { Button } from "@/components/Button";
-import type { Document, ChatMessage } from "@/types";
+import { FolderTree } from "@/components/FolderTree";
+import type { Document, ChatMessage, Folder } from "@/types";
 
 export default function MultiChatPage() {
   const router = useRouter();
@@ -33,6 +34,7 @@ export default function MultiChatPage() {
   const [fileContent, setFileContent] = useState<string>("");
   const [isResizing, setIsResizing] = useState(false);
   const [resizeTarget, setResizeTarget] = useState<"sidebar" | "fileviewer" | null>(null);
+  const [folders, setFolders] = useState<Folder[]>([]);
 
   useEffect(() => {
     const initialize = async () => {
@@ -41,10 +43,20 @@ export default function MultiChatPage() {
         router.push("/login");
       } else {
         await fetchDocuments();
+        await loadFolders();
       }
     };
     initialize();
   }, [user, router, checkAuth, fetchDocuments]);
+
+  const loadFolders = async () => {
+    try {
+      const response = await foldersApi.list();
+      setFolders(response.folders);
+    } catch (error) {
+      console.error("Failed to load folders:", error);
+    }
+  };
 
   useEffect(() => {
     scrollToBottom();
@@ -213,17 +225,14 @@ export default function MultiChatPage() {
                 <p className="text-sm text-gray-400">No documents</p>
               </div>
             ) : (
-              <div className="py-1">
-                {readyDocuments.map((doc) => (
-                  <FileItem
-                    key={doc.id}
-                    document={doc}
-                    selected={selectedDocIds.includes(doc.id)}
-                    onToggle={() => handleDocumentToggle(doc.id)}
-                    onClick={() => handleFileClick(doc)}
-                  />
-                ))}
-              </div>
+              <FolderTree
+                folders={folders}
+                documents={readyDocuments}
+                onDocumentClick={handleFileClick}
+                selectedDocumentIds={selectedDocIds}
+                onDocumentToggle={handleDocumentToggle}
+                showCheckboxes={true}
+              />
             )}
           </div>
 
@@ -427,58 +436,6 @@ export default function MultiChatPage() {
           </>
         )}
       </div>
-    </div>
-  );
-}
-
-function FileItem({
-  document,
-  selected,
-  onToggle,
-  onClick,
-}: {
-  document: Document;
-  selected: boolean;
-  onToggle: () => void;
-  onClick: () => void;
-}) {
-  return (
-    <div
-      className={`
-        group flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors
-        ${selected ? "bg-blue-600 text-white" : "hover:bg-gray-700 text-gray-300"}
-      `}
-    >
-      <input
-        type="checkbox"
-        checked={selected}
-        onChange={onToggle}
-        onClick={(e) => e.stopPropagation()}
-        className="flex-shrink-0 h-4 w-4 text-blue-600 rounded focus:ring-blue-500 cursor-pointer"
-      />
-      <div
-        onClick={onClick}
-        className="flex-1 flex items-center gap-2 min-w-0"
-      >
-        <span className="text-lg flex-shrink-0">
-          {document.file_type.includes("pdf") ? "📕" : 
-           document.file_type.includes("doc") ? "📘" :
-           document.file_type.includes("image") ? "🖼️" : "📄"}
-        </span>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium truncate">
-            {document.original_filename}
-          </p>
-          <p className={`text-xs ${selected ? "text-blue-100" : "text-gray-500"}`}>
-            {(document.file_size / 1024).toFixed(1)} KB
-          </p>
-        </div>
-      </div>
-      {selected && (
-        <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-        </svg>
-      )}
     </div>
   );
 }

@@ -1,12 +1,13 @@
 """
 Document management API endpoints
 """
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from app.core.database import get_db
 from app.models.user import User
 from app.models.document import Document
+from app.models.folder import Folder
 from app.utils.dependencies import get_current_user
 from app.utils.file_handler import FileHandler
 from app.services.gemini_service import gemini_service
@@ -18,6 +19,7 @@ router = APIRouter(prefix="/documents", tags=["Documents"])
 @router.post("/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
 async def upload_document(
     file: UploadFile = File(...),
+    folder_id: Optional[int] = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -26,12 +28,26 @@ async def upload_document(
 
     Args:
         file: File to upload
+        folder_id: Optional folder ID to organize document
         current_user: Current authenticated user
         db: Database session
 
     Returns:
         Created document information
     """
+    # Validate folder if provided
+    if folder_id:
+        folder = (
+            db.query(Folder)
+            .filter(Folder.id == folder_id, Folder.user_id == current_user.id)
+            .first()
+        )
+        if not folder:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Folder not found",
+            )
+    
     # Validate file
     if not FileHandler.is_allowed_file(file.filename):
         raise HTTPException(
@@ -55,6 +71,7 @@ async def upload_document(
         # Create document record
         document = Document(
             user_id=current_user.id,
+            folder_id=folder_id,
             filename=unique_filename,
             original_filename=file.filename,
             file_path=file_path,
@@ -231,3 +248,55 @@ async def delete_document(
     db.commit()
 
     return None
+
+
+@router.patch("/{document_id}", response_model=DocumentResponse)
+async def update_document(
+    document_id: int,
+    folder_id: Optional[int] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Update a document (e.g., move to folder)
+
+    Args:
+        document_id: Document ID
+        folder_id: New folder ID (None for root)
+        current_user: Current authenticated user
+        db: Database session
+
+    Returns:
+        Updated document information
+    """
+    document = (
+        db.query(Document)
+        .filter(Document.id == document_id, Document.user_id == current_user.id)
+        .first()
+    )
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+
+    # Validate folder if provided
+    if folder_id is not None:
+        folder = (
+            db.query(Folder)
+            .filter(Folder.id == folder_id, Folder.user_id == current_user.id)
+            .first()
+        )
+        if not folder:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Folder not found",
+            )
+
+    # Update folder
+    document.folder_id = folder_id
+    db.commit()
+    db.refresh(document)
+
+    return DocumentResponse.from_orm(document)

@@ -21,6 +21,7 @@ export interface Document {
   original_filename: string;
   file_size: number;
   file_type: string;
+  folder_id?: number;
   status: "processing" | "ready" | "error";
   error_message?: string;
   summary?: string;
@@ -77,4 +78,36 @@ export interface SummaryResponse {
   document_id: number;
   summary: string;
   topics: string[];
+}
+
+export interface Folder {
+  id: number;
+  name: string;
+  parent_id?: number;
+  color: string;
+  icon: string;
+  user_id: number;
+  created_at: string;
+  updated_at: string;
+  children?: Folder[];
+  document_count?: number;
+}
+
+export interface FolderTreeResponse {
+  folders: Folder[];
+  total: number;
+}
+
+export interface FolderCreate {
+  name: string;
+  parent_id?: number;
+  color?: string;
+  icon?: string;
+}
+
+export interface FolderUpdate {
+  name?: string;
+  parent_id?: number;
+  color?: string;
+  icon?: string;
 }

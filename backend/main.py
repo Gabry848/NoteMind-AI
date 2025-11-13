@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import init_db
-from app.api import auth, documents, chat, summaries
+from app.api import auth, documents, chat, summaries, folders
 
 
 @asynccontextmanager
@@ -39,6 +39,7 @@ app.add_middleware(
 # Include routers
 app.include_router(auth.router, prefix="/api")
 app.include_router(documents.router, prefix="/api")
+app.include_router(folders.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
 app.include_router(summaries.router, prefix="/api")
 
