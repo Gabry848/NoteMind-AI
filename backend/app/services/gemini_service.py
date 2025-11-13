@@ -374,9 +374,18 @@ Return only the topics as a comma-separated list, nothing else."""
             elif question_type == "open_ended":
                 type_instruction = f"Generate exactly {question_count} open-ended questions that require written explanations."
             else:  # mixed
-                mc_count = question_count // 2
+                # For mixed type, generate mostly multiple choice (70-80%) with some open-ended questions
+                mc_count = int(question_count * 0.7)  # 70% multiple choice
                 oe_count = question_count - mc_count
-                type_instruction = f"Generate {mc_count} multiple choice questions with 4 options each (A, B, C, D) and {oe_count} open-ended questions."
+                # Ensure at least 1 of each type if possible
+                if question_count >= 2:
+                    if mc_count == 0:
+                        mc_count = 1
+                        oe_count = question_count - 1
+                    elif oe_count == 0:
+                        oe_count = 1
+                        mc_count = question_count - 1
+                type_instruction = f"Generate exactly {mc_count} multiple choice questions with 4 options each (A, B, C, D) and exactly {oe_count} open-ended questions."
             
             prompt = f"""Based on the provided document(s), generate a quiz to test understanding of the material.
 
@@ -384,12 +393,14 @@ Return only the topics as a comma-separated list, nothing else."""
 {difficulty_instruction}
 {type_instruction}
 
-Requirements:
-1. Questions should be clear and unambiguous
-2. Cover different topics from the document(s)
-3. For multiple choice questions, include exactly 4 options where only one is correct
-4. For open-ended questions, provide questions that require substantive answers
-5. ALL text (questions, options, answers) must be in {language_name}
+CRITICAL REQUIREMENTS:
+1. You MUST generate EXACTLY the number of questions specified above - no more, no less
+2. Questions should be clear and unambiguous
+3. Cover different topics from the document(s)
+4. For multiple choice questions, include exactly 4 options where only one is correct
+5. For open-ended questions, provide questions that require substantive answers
+6. ALL text (questions, options, answers) must be in {language_name}
+7. STRICTLY FOLLOW the question count and type distribution specified above
 
 Return your response in JSON format with the following structure:
 {{
@@ -415,7 +426,10 @@ Return your response in JSON format with the following structure:
   ]
 }}
 
-Important: Return ONLY the JSON object, no additional text."""
+IMPORTANT: 
+- Return ONLY the JSON object, no additional text
+- Ensure you generate the EXACT number and types of questions specified
+- Total questions must be exactly {question_count}"""
 
             content_parts = [prompt] + files
             response = self.model.generate_content(
@@ -441,6 +455,23 @@ Important: Return ONLY the JSON object, no additional text."""
             response_text = response_text.strip()
             
             quiz_data = json.loads(response_text)
+            
+            # Validate question count
+            questions = quiz_data.get("questions", [])
+            if len(questions) != question_count:
+                print(f"Warning: Generated {len(questions)} questions but {question_count} were requested")
+                # Trim or pad to match requested count
+                if len(questions) > question_count:
+                    quiz_data["questions"] = questions[:question_count]
+                elif len(questions) < question_count:
+                    # Log warning but continue - better to have fewer questions than fail
+                    print(f"Warning: Only {len(questions)} questions generated, expected {question_count}")
+            
+            # Validate question types for mixed quizzes
+            if question_type == "mixed":
+                mc_questions = [q for q in quiz_data["questions"] if q.get("type") == "multiple_choice"]
+                oe_questions = [q for q in quiz_data["questions"] if q.get("type") == "open_ended"]
+                print(f"Generated quiz with {len(mc_questions)} multiple choice and {len(oe_questions)} open-ended questions")
             
             # Generate unique quiz ID
             quiz_data["quiz_id"] = str(uuid.uuid4())
