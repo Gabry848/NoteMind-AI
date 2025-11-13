@@ -80,3 +80,36 @@ class FileHandler:
     def get_file_size(file_path: str) -> int:
         """Get file size in bytes"""
         return os.path.getsize(file_path) if os.path.exists(file_path) else 0
+
+    @staticmethod
+    def read_file_content(file_path: str) -> str:
+        """
+        Read file content as text
+
+        Args:
+            file_path: Path to file
+
+        Returns:
+            File content as string
+        """
+        try:
+            if not os.path.exists(file_path):
+                return "File not found"
+            
+            ext = FileHandler.get_file_extension(file_path)
+            
+            # Handle text-based files
+            if ext in ['.txt', '.md', '.json', '.py', '.js', '.ts', '.tsx', '.jsx', '.css', '.html', '.xml']:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    return f.read()
+            
+            # For PDF and DOCX, we'll return a message (these require special libraries)
+            elif ext == '.pdf':
+                return "PDF content preview not available. This file type requires special processing."
+            elif ext in ['.doc', '.docx']:
+                return "Word document content preview not available. This file type requires special processing."
+            else:
+                return f"Content preview not available for {ext} files"
+                
+        except Exception as e:
+            return f"Error reading file: {str(e)}"

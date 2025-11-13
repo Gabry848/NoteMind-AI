@@ -13,6 +13,41 @@ import { chat, documents as documentsApi } from "@/lib/api";
 import { Button } from "@/components/Button";
 import type { Document, ChatMessage } from "@/types";
 
+// Simple markdown formatter
+function formatMarkdown(text: string): string {
+  let html = text;
+  
+  // Headers
+  html = html.replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold mt-4 mb-2">$1</h3>');
+  html = html.replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold mt-5 mb-3">$1</h2>');
+  html = html.replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold mt-6 mb-4">$1</h1>');
+  
+  // Bold
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>');
+  
+  // Italic
+  html = html.replace(/\*(.*?)\*/g, '<em class="italic">$1</em>');
+  
+  // Code blocks
+  html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre class="bg-gray-700 p-3 rounded my-3 overflow-x-auto"><code>$2</code></pre>');
+  
+  // Inline code
+  html = html.replace(/`([^`]+)`/g, '<code class="bg-gray-700 px-1.5 py-0.5 rounded text-sm">$1</code>');
+  
+  // Links
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-400 hover:underline" target="_blank" rel="noopener">$1</a>');
+  
+  // Lists
+  html = html.replace(/^\* (.*$)/gim, '<li class="ml-4">• $1</li>');
+  html = html.replace(/^- (.*$)/gim, '<li class="ml-4">• $1</li>');
+  
+  // Line breaks
+  html = html.replace(/\n\n/g, '<br/><br/>');
+  html = html.replace(/\n/g, '<br/>');
+  
+  return html;
+}
+
 export default function MultiChatPage() {
   const router = useRouter();
   const { user, checkAuth } = useAuthStore();
@@ -76,8 +111,8 @@ export default function MultiChatPage() {
     
     // Fetch file content
     try {
-      const docData = await documentsApi.get(doc.id);
-      setFileContent(docData.summary || "Content preview not available");
+      const docContent = await documentsApi.getContent(doc.id);
+      setFileContent(docContent.content);
     } catch (error) {
       console.error("Failed to load file content:", error);
       setFileContent("Failed to load content");
@@ -372,9 +407,16 @@ export default function MultiChatPage() {
 
               <div className="flex-1 overflow-y-auto p-4">
                 <div className="prose prose-invert max-w-none">
-                  <div className="text-sm text-gray-300 whitespace-pre-wrap font-mono leading-relaxed">
-                    {fileContent}
-                  </div>
+                  {selectedFileContent?.file_type === '.md' ? (
+                    <div 
+                      className="text-sm text-gray-300 leading-relaxed markdown-content"
+                      dangerouslySetInnerHTML={{ __html: formatMarkdown(fileContent) }}
+                    />
+                  ) : (
+                    <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono leading-relaxed overflow-x-auto">
+                      {fileContent}
+                    </pre>
+                  )}
                 </div>
               </div>
             </div>

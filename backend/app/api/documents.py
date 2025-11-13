@@ -122,6 +122,45 @@ async def list_documents(
     )
 
 
+@router.get("/{document_id}/content")
+async def get_document_content(
+    document_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Get document file content
+
+    Args:
+        document_id: Document ID
+        current_user: Current authenticated user
+        db: Database session
+
+    Returns:
+        Document file content as text
+    """
+    document = (
+        db.query(Document)
+        .filter(Document.id == document_id, Document.user_id == current_user.id)
+        .first()
+    )
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+
+    # Read file content
+    content = FileHandler.read_file_content(document.file_path)
+
+    return {
+        "document_id": document.id,
+        "filename": document.original_filename,
+        "content": content,
+    }
+
+
 @router.get("/{document_id}", response_model=DocumentResponse)
 async def get_document(
     document_id: int,

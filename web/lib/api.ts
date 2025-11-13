@@ -80,6 +80,11 @@ export const documents = {
   delete: async (id: number): Promise<void> => {
     await api.delete(`/documents/${id}`);
   },
+
+  getContent: async (id: number): Promise<{ document_id: number; filename: string; content: string }> => {
+    const response = await api.get(`/documents/${id}/content`);
+    return response.data;
+  },
 };
 
 // Chat API
