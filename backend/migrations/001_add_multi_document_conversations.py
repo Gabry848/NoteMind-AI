@@ -51,9 +51,43 @@ def upgrade():
             WHERE document_id IS NOT NULL
         """))
         
+        # For SQLite, we need to recreate the conversations table to make document_id nullable
+        print("Updating conversations table schema...")
+        
+        # Create a new temporary table with nullable document_id
+        conn.execute(text("""
+            CREATE TABLE conversations_new (
+                id INTEGER PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                document_id INTEGER,
+                title VARCHAR,
+                created_at DATETIME,
+                updated_at DATETIME,
+                FOREIGN KEY (user_id) REFERENCES users(id),
+                FOREIGN KEY (document_id) REFERENCES documents(id)
+            )
+        """))
+        
+        # Copy data from old table to new table
+        conn.execute(text("""
+            INSERT INTO conversations_new (id, user_id, document_id, title, created_at, updated_at)
+            SELECT id, user_id, document_id, title, created_at, updated_at
+            FROM conversations
+        """))
+        
+        # Drop old table
+        conn.execute(text("DROP TABLE conversations"))
+        
+        # Rename new table to conversations
+        conn.execute(text("ALTER TABLE conversations_new RENAME TO conversations"))
+        
+        # Recreate indexes
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_conversations_id ON conversations (id)"))
+        
         conn.commit()
         print(f"✓ Migration completed successfully!")
         print(f"  - conversation_documents table created")
+        print(f"  - conversations.document_id is now nullable")
         print(f"  - {result.rowcount if hasattr(result, 'rowcount') else 'N/A'} existing conversations migrated")
 
 
