@@ -313,10 +313,29 @@ function ChatBubble({ message }: { message: ChatMessage }) {
         {isUser ? (
           <p className="whitespace-pre-wrap">{message.content}</p>
         ) : (
-          <div className="prose prose-sm max-w-none prose-headings:mt-3 prose-headings:mb-2 prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-1 prose-code:bg-gray-200 prose-code:px-1 prose-code:rounded prose-pre:bg-gray-800 prose-pre:text-white prose-a:text-blue-600">
+          <div className="markdown-content">
             <ReactMarkdown 
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeRaw]}
+              components={{
+                ul: ({node, ...props}) => <ul className="list-disc list-inside space-y-1 my-2" {...props} />,
+                ol: ({node, ...props}) => <ol className="list-decimal list-inside space-y-1 my-2" {...props} />,
+                li: ({node, ...props}) => <li className="ml-2" {...props} />,
+                p: ({node, ...props}) => <p className="my-2" {...props} />,
+                h1: ({node, ...props}) => <h1 className="text-2xl font-bold mt-4 mb-2" {...props} />,
+                h2: ({node, ...props}) => <h2 className="text-xl font-bold mt-3 mb-2" {...props} />,
+                h3: ({node, ...props}) => <h3 className="text-lg font-bold mt-3 mb-2" {...props} />,
+                code: ({node, inline, ...props}: any) => 
+                  inline ? 
+                    <code className="bg-gray-200 px-1 py-0.5 rounded text-sm font-mono" {...props} /> :
+                    <code className="block bg-gray-800 text-white p-3 rounded my-2 overflow-x-auto font-mono text-sm" {...props} />,
+                pre: ({node, ...props}) => <pre className="my-2" {...props} />,
+                a: ({node, ...props}) => <a className="text-blue-600 hover:underline" {...props} />,
+                blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-gray-300 pl-4 italic my-2" {...props} />,
+                table: ({node, ...props}) => <table className="border-collapse border border-gray-300 my-2" {...props} />,
+                th: ({node, ...props}) => <th className="border border-gray-300 px-2 py-1 bg-gray-200 font-semibold" {...props} />,
+                td: ({node, ...props}) => <td className="border border-gray-300 px-2 py-1" {...props} />,
+              }}
             >
               {message.content}
             </ReactMarkdown>
