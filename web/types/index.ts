@@ -47,7 +47,8 @@ export interface Citation {
 }
 
 export interface ChatRequest {
-  document_id: number;
+  document_id?: number;        // Single document (backward compatible)
+  document_ids?: number[];     // Multiple documents
   message: string;
   conversation_id?: number;
 }
@@ -60,7 +61,8 @@ export interface ChatResponse {
 
 export interface Conversation {
   id: number;
-  document_id: number;
+  document_id?: number;        // Backward compatibility
+  document_ids?: number[];     // Multiple documents
   title: string;
   created_at: string;
   messages: ChatMessage[];

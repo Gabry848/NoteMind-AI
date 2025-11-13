@@ -21,7 +21,7 @@ async def send_message(
     db: Session = Depends(get_db),
 ):
     """
-    Send a chat message
+    Send a chat message (supports single or multiple documents)
 
     Args:
         chat_request: Chat request data
@@ -31,26 +31,37 @@ async def send_message(
     Returns:
         Chat response with AI message
     """
-    # Verify document belongs to user
-    document = (
-        db.query(Document)
-        .filter(
-            Document.id == chat_request.document_id,
-            Document.user_id == current_user.id,
-        )
-        .first()
-    )
-
-    if not document:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Document not found",
-        )
-
-    if document.status != "ready":
+    # Get document IDs from request
+    document_ids = chat_request.get_document_ids()
+    
+    if not document_ids:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Document is not ready. Status: {document.status}",
+            detail="At least one document ID is required",
+        )
+
+    # Verify all documents belong to user and are ready
+    documents = (
+        db.query(Document)
+        .filter(
+            Document.id.in_(document_ids),
+            Document.user_id == current_user.id,
+        )
+        .all()
+    )
+
+    if len(documents) != len(document_ids):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="One or more documents not found",
+        )
+
+    # Check if all documents are ready
+    not_ready = [d for d in documents if d.status != "ready"]
+    if not_ready:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Some documents are not ready: {', '.join([d.filename for d in not_ready])}",
         )
 
     # Get or create conversation
@@ -72,10 +83,16 @@ async def send_message(
         # Create new conversation
         conversation = Conversation(
             user_id=current_user.id,
-            document_id=document.id,
+            document_id=document_ids[0] if len(document_ids) == 1 else None,  # Backward compatibility
             title=chat_request.message[:50] + "..." if len(chat_request.message) > 50 else chat_request.message,
         )
         db.add(conversation)
+        db.flush()  # Get conversation ID
+        
+        # Associate documents with conversation
+        for doc in documents:
+            conversation.documents.append(doc)
+        
         db.commit()
         db.refresh(conversation)
 
@@ -99,12 +116,20 @@ async def send_message(
 
         history = [{"role": msg.role, "content": msg.content} for msg in messages[:-1]]  # Exclude current message
 
-        # Get AI response
-        response_text, citations = await gemini_service.chat_with_document(
-            query=chat_request.message,
-            file_id=document.gemini_file_id,
-            conversation_history=history,
-        )
+        # Get AI response - use multi-document chat if multiple documents
+        if len(documents) > 1:
+            file_ids = [doc.gemini_file_id for doc in documents]
+            response_text, citations = await gemini_service.chat_with_documents(
+                query=chat_request.message,
+                file_ids=file_ids,
+                conversation_history=history,
+            )
+        else:
+            response_text, citations = await gemini_service.chat_with_document(
+                query=chat_request.message,
+                file_id=documents[0].gemini_file_id,
+                conversation_history=history,
+            )
 
         # Save AI message
         ai_message = Message(
@@ -181,10 +206,16 @@ async def get_conversation_history(
             .all()
         )
 
+        # Get document IDs for this conversation
+        doc_ids = [doc.id for doc in conv.documents] if conv.documents else []
+        if not doc_ids and conv.document_id:  # Backward compatibility
+            doc_ids = [conv.document_id]
+
         result.append(
             ConversationResponse(
                 id=conv.id,
                 document_id=conv.document_id,
+                document_ids=doc_ids,
                 title=conv.title,
                 created_at=conv.created_at,
                 messages=[

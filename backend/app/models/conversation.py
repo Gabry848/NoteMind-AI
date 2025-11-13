@@ -1,10 +1,19 @@
 """
 Conversation and Message models
 """
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, JSON
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, JSON, Table
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.core.database import Base
+
+
+# Association table for many-to-many relationship between conversations and documents
+conversation_documents = Table(
+    "conversation_documents",
+    Base.metadata,
+    Column("conversation_id", Integer, ForeignKey("conversations.id", ondelete="CASCADE"), primary_key=True),
+    Column("document_id", Integer, ForeignKey("documents.id", ondelete="CASCADE"), primary_key=True),
+)
 
 
 class Conversation(Base):
@@ -14,14 +23,15 @@ class Conversation(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    document_id = Column(Integer, ForeignKey("documents.id"), nullable=False)
+    document_id = Column(Integer, ForeignKey("documents.id"), nullable=True)  # Manteniamo per retrocompatibilità
     title = Column(String, default="New Conversation")
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     user = relationship("User", back_populates="conversations")
-    document = relationship("Document", back_populates="conversations")
+    document = relationship("Document", back_populates="conversations")  # Backward compatibility
+    documents = relationship("Document", secondary=conversation_documents, backref="multi_conversations")
     messages = relationship("Message", back_populates="conversation", cascade="all, delete-orphan")
 
     def __repr__(self):

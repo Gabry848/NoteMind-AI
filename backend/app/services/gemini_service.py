@@ -142,6 +142,69 @@ class GeminiService:
             traceback.print_exc()
             raise Exception(f"Failed to chat with document: {str(e)}")
 
+    async def chat_with_documents(
+        self,
+        query: str,
+        file_ids: List[str],
+        conversation_history: Optional[List[Dict[str, str]]] = None,
+    ) -> Tuple[str, List[Dict]]:
+        """
+        Chat with multiple documents using RAG
+
+        Args:
+            query: User query
+            file_ids: List of Gemini file IDs
+            conversation_history: Previous conversation messages
+
+        Returns:
+            Tuple of (response text, citations)
+        """
+        try:
+            # Get all files
+            files = [genai.get_file(name=file_id) for file_id in file_ids]
+            
+            # Build the prompt with context
+            system_instruction = (
+                f"You are a helpful AI assistant that answers questions based on {len(files)} provided documents. "
+                "Always cite specific documents and parts when answering. "
+                "If you find information across multiple documents, mention which documents contain what information. "
+                "If the answer is not in any of the documents, say so clearly."
+            )
+            
+            # Build conversation context
+            context_parts = [system_instruction]
+            
+            # Add conversation history
+            if conversation_history:
+                for msg in conversation_history[-5:]:  # Last 5 messages for context
+                    context_parts.append(f"{msg['role']}: {msg['content']}")
+            
+            # Combine context with query
+            full_prompt = "\n\n".join(context_parts) + f"\n\nuser: {query}\n\nassistant:"
+            
+            # Generate response with all files context
+            content_parts = [full_prompt] + files
+            response = self.model.generate_content(
+                content_parts,
+                generation_config=genai.GenerationConfig(
+                    temperature=0.7,
+                    top_p=0.95,
+                    top_k=40,
+                    max_output_tokens=2048,
+                ),
+            )
+
+            # Extract citations (if available in response metadata)
+            citations = self._extract_citations(response)
+
+            return response.text, citations
+
+        except Exception as e:
+            print(f"Error in chat_with_documents: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise Exception(f"Failed to chat with documents: {str(e)}")
+
     async def generate_summary(self, file_id: str, summary_type: str = "medium") -> str:
         """
         Generate a summary of the document

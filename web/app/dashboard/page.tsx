@@ -81,13 +81,22 @@ export default function DashboardPage() {
                 Upload and chat with your documents using AI
               </p>
             </div>
-            <Button
-              variant="primary"
-              onClick={() => setShowUpload(!showUpload)}
-              size="lg"
-            >
-              {showUpload ? "Cancel" : "+ Upload Document"}
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                variant="secondary"
+                onClick={() => router.push("/multi-chat")}
+                size="lg"
+              >
+                💬 Multi-Document Chat
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => setShowUpload(!showUpload)}
+                size="lg"
+              >
+                {showUpload ? "Cancel" : "+ Upload Document"}
+              </Button>
+            </div>
           </div>
 
           <AnimatePresence>
@@ -105,6 +114,38 @@ export default function DashboardPage() {
             )}
           </AnimatePresence>
         </div>
+
+        {/* Info Banner for Multi-Chat */}
+        {documents.filter(d => d.status === "ready").length > 1 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6"
+          >
+            <Card>
+              <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">✨</span>
+                  <div>
+                    <p className="font-semibold text-gray-900">
+                      Try Multi-Document Chat!
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      You have {documents.filter(d => d.status === "ready").length} documents ready. 
+                      Chat with multiple documents at once for deeper insights.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="primary"
+                  onClick={() => router.push("/multi-chat")}
+                >
+                  Start Multi-Chat →
+                </Button>
+              </div>
+            </Card>
+          </motion.div>
+        )}
 
         {/* Documents Grid */}
         {isLoading ? (
@@ -210,9 +251,16 @@ function DocumentCard({
         >
           {document.status}
         </span>
-        <span className="text-sm text-gray-500">
-          {(document.file_size / 1024).toFixed(1)} KB
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-500">
+            {(document.file_size / 1024).toFixed(1)} KB
+          </span>
+          {document.status === "ready" && (
+            <span className="text-xs text-blue-600" title="Ready to chat">
+              💬
+            </span>
+          )}
+        </div>
       </div>
 
       {document.error_message && (

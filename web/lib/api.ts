@@ -89,6 +89,19 @@ export const chat = {
     return response.data;
   },
 
+  sendMultiDocumentMessage: async (
+    documentIds: number[],
+    message: string,
+    conversationId?: number
+  ): Promise<ChatResponse> => {
+    const response = await api.post("/chat", {
+      document_ids: documentIds,
+      message,
+      conversation_id: conversationId,
+    });
+    return response.data;
+  },
+
   getHistory: async (documentId: number): Promise<Conversation[]> => {
     const response = await api.get(`/chat/history/${documentId}`);
     return response.data;
