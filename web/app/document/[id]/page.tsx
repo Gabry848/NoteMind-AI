@@ -15,6 +15,7 @@ import { chat as chatApi, summaries as summariesApi, documents as docsApi } from
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { Card } from "@/components/Card";
+import MermaidDiagram from "@/components/MermaidDiagram";
 import type { ChatMessage, SummaryResponse } from "@/types";
 
 export default function DocumentPage() {
@@ -30,9 +31,11 @@ export default function DocumentPage() {
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [summary, setSummary] = useState<SummaryResponse | null>(null);
-  const [activeTab, setActiveTab] = useState<"chat" | "summary" | "content">("chat");
+  const [activeTab, setActiveTab] = useState<"chat" | "summary" | "content" | "schema">("chat");
   const [fileContent, setFileContent] = useState<string | null>(null);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
+  const [mermaidSchema, setMermaidSchema] = useState<string | null>(null);
+  const [isLoadingSchema, setIsLoadingSchema] = useState(false);
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -125,6 +128,21 @@ export default function DocumentPage() {
     }
   };
 
+  const handleLoadSchema = async (regenerate: boolean = false) => {
+    if (!selectedDocument) return;
+    if (mermaidSchema && !regenerate) return;
+
+    setIsLoadingSchema(true);
+    try {
+      const result = await docsApi.getMermaidSchema(documentId, regenerate);
+      setMermaidSchema(result.mermaid_schema);
+    } catch (error) {
+      console.error("Failed to load Mermaid schema:", error);
+    } finally {
+      setIsLoadingSchema(false);
+    }
+  };
+
   const handleNewChat = () => {
     setMessages([]);
     setConversationId(null);
@@ -187,6 +205,19 @@ export default function DocumentPage() {
             }`}
           >
             📊 Summary
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab("schema");
+              if (!mermaidSchema) handleLoadSchema();
+            }}
+            className={`px-6 py-3 rounded-lg font-medium transition-all ${
+              activeTab === "schema"
+                ? "bg-blue-600 text-white shadow-md"
+                : "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700"
+            }`}
+          >
+            📈 Schema
           </button>
           <button
             onClick={() => {
@@ -329,6 +360,56 @@ export default function DocumentPage() {
                     </p>
                     <Button onClick={handleGenerateSummary} variant="primary">
                       Generate Summary
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        ) : activeTab === "schema" ? (
+          <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-md p-6">
+            {mermaidSchema ? (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-white">Document Schema</h2>
+                  <Button 
+                    onClick={() => handleLoadSchema(true)} 
+                    variant="secondary"
+                    disabled={isLoadingSchema}
+                  >
+                    {isLoadingSchema ? "Regenerating..." : "Regenerate Schema"}
+                  </Button>
+                </div>
+                <div className="bg-white rounded-lg p-4 overflow-x-auto">
+                  <MermaidDiagram chart={mermaidSchema} />
+                </div>
+                <details className="mt-4">
+                  <summary className="text-sm text-gray-400 cursor-pointer hover:text-gray-300">
+                    View Mermaid Code
+                  </summary>
+                  <pre className="mt-2 p-4 bg-gray-900 text-gray-300 rounded-lg text-sm overflow-x-auto">
+                    {mermaidSchema}
+                  </pre>
+                </details>
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                {isLoadingSchema ? (
+                  <>
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-700 border-t-blue-500 mb-4"></div>
+                    <p className="text-gray-400">Generating schema diagram...</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-6xl mb-4">📈</div>
+                    <h3 className="text-xl font-semibold text-white mb-2">
+                      No schema yet
+                    </h3>
+                    <p className="text-gray-400 mb-6">
+                      Generate a visual diagram of the document structure
+                    </p>
+                    <Button onClick={() => handleLoadSchema()} variant="primary">
+                      Generate Schema
                     </Button>
                   </>
                 )}

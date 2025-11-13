@@ -227,9 +227,6 @@ export default function DocumentsPage() {
               >
                 📊 Grid View
               </Button>
-              <Button variant="secondary" onClick={() => handleCreateFolder()}>
-                📁 New Folder
-              </Button>
             </div>
             <Button
               variant="primary"

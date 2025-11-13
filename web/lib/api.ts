@@ -97,6 +97,11 @@ export const documents = {
     const response = await api.get(`/documents/${id}/content`);
     return response.data;
   },
+
+  getMermaidSchema: async (id: number, regenerate: boolean = false): Promise<{ document_id: number; mermaid_schema: string }> => {
+    const response = await api.get(`/documents/${id}/mermaid${regenerate ? '?regenerate=true' : ''}`);
+    return response.data;
+  },
 };
 
 // Chat API

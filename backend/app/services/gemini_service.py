@@ -290,6 +290,117 @@ Return only the topics as a comma-separated list, nothing else."""
             print(f"Failed to extract key topics: {str(e)}")
             return []
 
+    async def generate_mermaid_schema(self, file_id: str) -> str:
+        """
+        Generate a Mermaid diagram schema of the document structure
+
+        Args:
+            file_id: Gemini file ID
+
+        Returns:
+            Mermaid diagram syntax as string
+        """
+        try:
+            file = genai.get_file(name=file_id)
+
+            prompt = """Analyze this document and create a clear, readable Mermaid diagram that represents its main structure.
+
+CRITICAL INSTRUCTIONS:
+1. Create a COMPACT diagram with ONLY the main topics (5-10 nodes maximum)
+2. Use VERTICAL layout (TD = Top Down) for flowcharts
+3. Keep labels SHORT (1-3 words)
+4. Return ONLY raw Mermaid code (NO ```mermaid markers)
+5. NEVER use colons (:) in labels
+6. Focus on HIGH-LEVEL structure, not every detail
+
+Example 1 - COMPACT MINDMAP:
+mindmap
+  root((Main Topic))
+    Section 1
+      Key Point A
+      Key Point B
+    Section 2
+      Key Point C
+      Key Point D
+    Section 3
+      Key Point E
+
+Example 2 - VERTICAL FLOWCHART (BEST FOR READABILITY):
+flowchart TD
+    A[Document] --> B[Part 1]
+    A --> C[Part 2]
+    A --> D[Part 3]
+    B --> E[Topic A]
+    C --> F[Topic B]
+    D --> G[Topic C]
+
+Example 3 - SIMPLE GRAPH:
+graph TD
+    A[Main] --> B[Section 1]
+    A --> C[Section 2]
+    B --> D[Point A]
+    C --> E[Point B]
+
+RULES:
+- Use flowchart TD (Top-Down) for best vertical display
+- Maximum 8-10 nodes total
+- Labels: 1-3 words only
+- NO colons (:) anywhere
+- Show only main structure, not details
+- Keep it simple and readable
+
+WRONG:
+flowchart TD
+    A[Introduction: Overview of Topic] ❌ TOO LONG
+    B[Section 1.1: Details] ❌ HAS COLONS
+
+CORRECT:
+flowchart TD
+    A[Introduction] ✓
+    B[Section 1] ✓
+
+Generate a COMPACT, VERTICAL diagram now (5-10 nodes max):"""
+
+            response = self.model.generate_content(
+                [prompt, file],
+                generation_config=genai.GenerationConfig(
+                    temperature=0.4,
+                    top_p=0.9,
+                    max_output_tokens=3096,
+                ),
+            )
+
+            # Clean up response - remove any markdown code blocks if present
+            mermaid_code = response.text.strip()
+            if mermaid_code.startswith("```mermaid"):
+                mermaid_code = mermaid_code[10:]
+            elif mermaid_code.startswith("```"):
+                mermaid_code = mermaid_code[3:]
+            if mermaid_code.endswith("```"):
+                mermaid_code = mermaid_code[:-3]
+            
+            mermaid_code = mermaid_code.strip()
+            
+            # Post-process for mindmap: remove colons from labels which break syntax
+            if mermaid_code.startswith("mindmap"):
+                lines = mermaid_code.split('\n')
+                cleaned_lines = []
+                for line in lines:
+                    # If line contains a colon (but not in root definition), replace it with space
+                    if ':' in line and not line.strip().startswith('root(('):
+                        # Replace "Label: Value" with "Label Value"
+                        line = line.replace(':', ' ')
+                    cleaned_lines.append(line)
+                mermaid_code = '\n'.join(cleaned_lines)
+            
+            return mermaid_code
+
+        except Exception as e:
+            print(f"Error in generate_mermaid_schema: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise Exception(f"Failed to generate Mermaid schema: {str(e)}")
+
     def _extract_citations(self, response) -> List[Dict]:
         """
         Extract citations from Gemini response

@@ -25,6 +25,7 @@ class Document(Base):
     status = Column(String, default="processing")  # processing, ready, error
     error_message = Column(Text, nullable=True)
     summary = Column(Text, nullable=True)
+    mermaid_schema = Column(Text, nullable=True)  # Mermaid diagram schema
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

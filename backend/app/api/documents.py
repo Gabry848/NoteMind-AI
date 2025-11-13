@@ -13,7 +13,7 @@ from app.utils.dependencies import get_current_user
 from app.utils.file_handler import FileHandler
 from app.services.gemini_service import gemini_service
 from app.services.ocr_service import ocr_service
-from app.schemas.document import DocumentResponse, DocumentListResponse, DocumentUpdate
+from app.schemas.document import DocumentResponse, DocumentListResponse, DocumentUpdate, MermaidSchemaResponse
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
@@ -341,3 +341,70 @@ async def update_document(
     db.refresh(document)
 
     return DocumentResponse.from_orm(document)
+
+
+@router.get("/{document_id}/mermaid", response_model=MermaidSchemaResponse)
+async def get_mermaid_schema(
+    document_id: int,
+    regenerate: bool = False,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Get or generate Mermaid diagram schema for a document
+
+    Args:
+        document_id: Document ID
+        regenerate: Force regeneration even if schema exists
+        current_user: Current authenticated user
+        db: Database session
+
+    Returns:
+        Mermaid schema for the document
+    """
+    document = (
+        db.query(Document)
+        .filter(Document.id == document_id, Document.user_id == current_user.id)
+        .first()
+    )
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+
+    if document.status != "ready":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Document is not ready for processing",
+        )
+
+    # Return existing schema if available and not forcing regeneration
+    if document.mermaid_schema and not regenerate:
+        return MermaidSchemaResponse(
+            document_id=document.id,
+            mermaid_schema=document.mermaid_schema,
+        )
+
+    # Generate new schema
+    try:
+        mermaid_schema = await gemini_service.generate_mermaid_schema(
+            file_id=document.gemini_file_id
+        )
+
+        # Save to database
+        document.mermaid_schema = mermaid_schema
+        db.commit()
+        db.refresh(document)
+
+        return MermaidSchemaResponse(
+            document_id=document.id,
+            mermaid_schema=mermaid_schema,
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate Mermaid schema: {str(e)}",
+        )

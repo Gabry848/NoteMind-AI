@@ -26,6 +26,7 @@ export interface Document {
   status: "processing" | "ready" | "error";
   error_message?: string;
   summary?: string;
+  mermaid_schema?: string;
   created_at: string;
   updated_at: string;
 }
@@ -111,4 +112,9 @@ export interface FolderUpdate {
   parent_id?: number;
   color?: string;
   icon?: string;
+}
+
+export interface MermaidSchemaResponse {
+  document_id: number;
+  mermaid_schema: string;
 }

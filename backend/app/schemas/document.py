@@ -18,6 +18,7 @@ class DocumentResponse(BaseModel):
     status: str
     error_message: Optional[str]
     summary: Optional[str]
+    mermaid_schema: Optional[str]
     created_at: datetime
     updated_at: datetime
 
@@ -51,3 +52,10 @@ class SummaryResponse(BaseModel):
     document_id: int
     summary: str
     topics: list[str]
+
+
+class MermaidSchemaResponse(BaseModel):
+    """Schema for Mermaid schema response"""
+
+    document_id: int
+    mermaid_schema: str
