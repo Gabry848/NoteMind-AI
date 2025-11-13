@@ -234,7 +234,7 @@ export default function QuizPage() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#050B1A] via-[#0B1226] to-[#050B1A] text-gray-100">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-100">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -top-32 -left-24 h-72 w-72 rounded-full bg-blue-500/20 blur-3xl" />
         <div className="absolute top-1/3 -right-20 h-80 w-80 rounded-full bg-purple-500/20 blur-[110px]" />
@@ -243,8 +243,8 @@ export default function QuizPage() {
       </div>
 
       <div className="relative z-10">
-        <header className="mx-auto flex max-w-6xl flex-col gap-8 px-6 pt-14 pb-6">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <header className="mx-auto flex max-w-6xl flex-col gap-6 px-4 sm:px-6 pt-8 sm:pt-14 pb-4 sm:pb-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => router.push('/dashboard')}
@@ -263,11 +263,11 @@ export default function QuizPage() {
                 </svg>
               </button>
               <div className="flex flex-col">
-                <h1 className="mt-4 text-3xl font-bold leading-tight text-white sm:text-4xl lg:text-[2.8rem]">
+                <h1 className="mt-2 sm:mt-4 text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight text-white">
                   Rispondi, impara con il Quiz AI
                 </h1>
-                <p className="mt-3 max-w-2xl text-sm text-gray-300 sm:text-base">
-                  Un flusso guidato in tre fasi ti accompagna dalla configurazione alla revisione, con un design coerente con il resto dell&apos;app in tema scuro.
+                <p className="mt-2 sm:mt-3 max-w-2xl text-sm sm:text-base text-gray-300">
+                  Un flusso guidato in tre fasi ti accompagna dalla configurazione alla revisione.
                 </p>
               </div>
             </div>
@@ -276,10 +276,11 @@ export default function QuizPage() {
               <Button
                 onClick={handleNewQuiz}
                 variant="secondary"
-                className="group flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-gray-100 transition-all hover:border-blue-400/60 hover:bg-blue-500/10"
+                className="group flex items-center gap-2 text-sm font-semibold"
               >
-                <span className="text-lg transition-transform group-hover:-translate-x-0.5">↺</span>
-                Nuovo Quiz
+                <span className="text-lg transition-transform group-hover:rotate-180">↺</span>
+                <span className="hidden sm:inline">Nuovo Quiz</span>
+                <span className="sm:hidden">Nuovo</span>
               </Button>
             )}
           </div>
@@ -312,10 +313,10 @@ export default function QuizPage() {
           </div>
         </header>
 
-        <main className="mx-auto grid max-w-6xl gap-8 px-6 pb-16 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-          <section className="space-y-6">
+        <main className="mx-auto grid max-w-6xl gap-4 sm:gap-6 lg:gap-8 px-4 sm:px-6 pb-8 sm:pb-16 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <section className="space-y-4 sm:space-y-6">
             {error && (
-              <div className="rounded-2xl border border-rose-400/40 bg-rose-500/15 p-4 text-rose-100 shadow-lg">
+              <div className="rounded-xl sm:rounded-2xl border border-rose-400/40 bg-rose-500/15 p-3 sm:p-4 text-rose-100 shadow-lg">
                 <div className="flex items-start gap-3">
                   <svg className="mt-0.5 h-5 w-5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                     <path
@@ -332,8 +333,8 @@ export default function QuizPage() {
               </div>
             )}
 
-            <div className="rounded-[28px] border border-white/10 bg-white/5 p-1 shadow-[0_25px_80px_rgba(0,0,0,0.45)] backdrop-blur">
-              <div className="rounded-[24px] border border-white/10 bg-[#0B1327]/80 p-6 sm:p-8">
+            <div className="rounded-2xl sm:rounded-[28px] border border-white/10 bg-white/5 p-1 shadow-2xl backdrop-blur">
+              <div className="rounded-xl sm:rounded-[24px] border border-white/10 bg-gray-800/90 p-4 sm:p-6 lg:p-8">
                 {stage === 'config' && (
                   <QuizConfig onStartQuiz={handleStartQuiz} isLoading={isLoading} />
                 )}
@@ -361,8 +362,8 @@ export default function QuizPage() {
             </div>
           </section>
 
-          <aside className="space-y-6">
-            <div className={`overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br ${stageMeta.accent} p-6 sm:p-7 backdrop-blur` }>
+          <aside className="space-y-4 sm:space-y-6">
+            <div className={`overflow-hidden rounded-2xl sm:rounded-3xl border border-white/10 bg-gradient-to-br ${stageMeta.accent} p-4 sm:p-6 lg:p-7 backdrop-blur` }>
               <div className="flex items-start gap-4">
                 <span className="text-3xl" aria-hidden>{stageMeta.icon}</span>
                 <div>
@@ -374,11 +375,11 @@ export default function QuizPage() {
                 </div>
               </div>
 
-              <div className="mt-6 space-y-3">
+              <div className="mt-4 sm:mt-6 space-y-2 sm:space-y-3">
                 {stageMeta.tips.map((tip, index) => (
                   <div
                     key={`${tip.icon}-${index}`}
-                    className="flex items-start gap-3 rounded-2xl border border-white/10 bg-[#0B1327]/70 px-4 py-3 text-sm text-gray-200"
+                    className="flex items-start gap-2 sm:gap-3 rounded-xl sm:rounded-2xl border border-white/10 bg-gray-800/70 px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-200"
                   >
                     <span className="mt-0.5 text-lg" aria-hidden>{tip.icon}</span>
                     <p className="leading-relaxed">{tip.text}</p>
@@ -388,13 +389,13 @@ export default function QuizPage() {
             </div>
 
             {stageStats.length > 0 && (
-              <div className="rounded-3xl border border-white/10 bg-[#0B1327]/80 p-6 backdrop-blur">
+              <div className="rounded-2xl sm:rounded-3xl border border-white/10 bg-gray-800/80 p-4 sm:p-6 backdrop-blur">
                 <p className="text-xs font-semibold uppercase tracking-[0.4em] text-gray-400">Metriche rapide</p>
-                <div className="mt-5 space-y-4">
+                <div className="mt-4 sm:mt-5 space-y-3 sm:space-y-4">
                   {stageStats.map((stat) => (
                     <div
                       key={stat.label}
-                      className="flex items-start justify-between gap-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-gray-200"
+                      className="flex items-start justify-between gap-3 sm:gap-4 rounded-xl sm:rounded-2xl border border-white/10 bg-white/5 px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-200"
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-xl" aria-hidden>{stat.icon}</span>

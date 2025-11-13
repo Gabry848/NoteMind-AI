@@ -22,19 +22,19 @@ export const Button: React.FC<ButtonProps> = ({
   type,
   ...props
 }) => {
-  const baseStyles = "font-medium rounded-lg transition-all duration-200 flex items-center justify-center";
+  const baseStyles = "font-medium rounded-lg transition-all duration-200 flex items-center justify-center touch-manipulation";
 
   const variants = {
-    primary: "bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg",
-    secondary: "bg-gray-200 hover:bg-gray-300 text-gray-900",
-    danger: "bg-red-600 hover:bg-red-700 text-white",
-    ghost: "bg-transparent hover:bg-gray-100 text-gray-700",
+    primary: "bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg active:bg-blue-800",
+    secondary: "bg-gray-700 hover:bg-gray-600 text-white border border-gray-600 active:bg-gray-500",
+    danger: "bg-red-600 hover:bg-red-700 text-white active:bg-red-800",
+    ghost: "bg-transparent hover:bg-gray-800 text-gray-300 hover:text-white active:bg-gray-700",
   };
 
   const sizes = {
-    sm: "px-3 py-1.5 text-sm",
-    md: "px-4 py-2 text-base",
-    lg: "px-6 py-3 text-lg",
+    sm: "px-3 py-2 text-sm min-h-[36px]",
+    md: "px-4 py-2.5 text-base min-h-[42px]",
+    lg: "px-6 py-3 text-lg min-h-[48px]",
   };
 
   return (
