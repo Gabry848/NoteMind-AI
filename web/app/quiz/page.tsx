@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { QuizConfig } from '@/components/QuizConfig';
 import { Quiz } from '@/components/Quiz';
@@ -44,6 +44,100 @@ interface QuizResultsData {
   overall_feedback: string;
 }
 
+const STAGE_FLOW: Array<{ id: QuizStage; label: string; icon: string }> = [
+  { id: 'config', label: 'Configura', icon: '🧩' },
+  { id: 'quiz', label: 'Quiz', icon: '🧠' },
+  { id: 'results', label: 'Risultati', icon: '✨' },
+];
+
+const STAGE_META: Record<QuizStage, {
+  title: string;
+  subtitle: string;
+  icon: string;
+  accent: string;
+  tips: Array<{ icon: string; text: string }>;
+}> = {
+  config: {
+    title: 'Configura il tuo quiz',
+    subtitle: 'Seleziona i documenti migliori e definisci le regole per un test su misura.',
+    icon: '🛠️',
+    accent: 'from-blue-500/25 to-indigo-500/10',
+    tips: [
+      { icon: '📁', text: 'Scegli più documenti per creare domande multi-contesto.' },
+      { icon: '🎯', text: 'Regola difficoltà e formato per allenare memoria e ragionamento.' },
+      { icon: '⚡', text: 'Più domande equivalgono a un punteggio più accurato.' },
+    ],
+  },
+  quiz: {
+    title: 'Quiz in corso',
+    subtitle: 'Rispondi con calma, puoi sempre rivedere le domande prima dell’invio.',
+    icon: '🚀',
+    accent: 'from-purple-500/25 to-pink-500/10',
+    tips: [
+      { icon: '📝', text: 'Le risposte vengono salvate mentre navighi tra le domande.' },
+      { icon: '🔁', text: 'Usa i pallini in fondo per saltare rapidamente alle domande.' },
+      { icon: '💡', text: 'Per le risposte aperte focalizzati su concetti e parole chiave.' },
+    ],
+  },
+  results: {
+    title: 'Analizza i risultati',
+    subtitle: 'Comprendi i punti forti e le aree da ripassare con le correzioni dettagliate.',
+    icon: '📊',
+    accent: 'from-emerald-500/25 to-teal-500/10',
+    tips: [
+      { icon: '🔍', text: 'Rivedi spiegazioni e risposte corrette per consolidare gli errori.' },
+      { icon: '📈', text: 'Monitora il trend dei punteggi per pianificare il tuo studio.' },
+      { icon: '🗂️', text: 'Genera un nuovo quiz sugli stessi documenti per fissare le nozioni.' },
+    ],
+  },
+};
+
+const formatQuestionType = (type: string) => {
+  if (type === 'multiple_choice') {
+    return 'Risposta multipla';
+  }
+  if (type === 'open_ended') {
+    return 'Risposta aperta';
+  }
+  return 'Formato misto';
+};
+
+const formatDifficulty = (difficulty: string) => {
+  switch (difficulty) {
+    case 'easy':
+      return 'Facile';
+    case 'medium':
+      return 'Intermedio';
+    case 'hard':
+      return 'Avanzato';
+    default:
+      return difficulty;
+  }
+};
+
+const extractErrorMessage = (error: unknown, fallback: string) => {
+  if (typeof error === 'string') {
+    return error;
+  }
+
+  if (error && typeof error === 'object') {
+    const maybeError = error as {
+      message?: string;
+      response?: { data?: { detail?: string } };
+    };
+
+    if (maybeError.response?.data?.detail) {
+      return maybeError.response.data.detail;
+    }
+
+    if (typeof maybeError.message === 'string' && maybeError.message.length > 0) {
+      return maybeError.message;
+    }
+  }
+
+  return fallback;
+};
+
 export default function QuizPage() {
   const router = useRouter();
   const [stage, setStage] = useState<QuizStage>('config');
@@ -51,6 +145,29 @@ export default function QuizPage() {
   const [resultsData, setResultsData] = useState<QuizResultsData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const stageIndex = STAGE_FLOW.findIndex((step) => step.id === stage);
+  const stageMeta = STAGE_META[stage];
+
+  const stageStats = useMemo(() => {
+    if (stage === 'quiz' && quizData) {
+      return [
+        { icon: '❓', label: 'Domande generate', value: `${quizData.question_count}`, helper: 'Totale domande da completare' },
+        { icon: '🎚️', label: 'Difficoltà', value: formatDifficulty(quizData.difficulty), helper: 'Livello impostato per questo quiz' },
+        { icon: '🧠', label: 'Formato', value: formatQuestionType(quizData.question_type), helper: 'Tipologia di risposta richiesta' },
+      ];
+    }
+
+    if (stage === 'results' && resultsData) {
+      return [
+        { icon: '🏆', label: 'Punteggio', value: `${Math.round(resultsData.score_percentage)}%`, helper: 'Percentuale complessiva di successo' },
+        { icon: '✅', label: 'Risposte corrette', value: `${resultsData.correct_answers}/${resultsData.total_questions}`, helper: 'Domande in cui hai centrato la risposta' },
+        { icon: '🧾', label: 'Correzioni', value: `${resultsData.corrections.length}`, helper: 'Spiegazioni disponibili da rivedere' },
+      ];
+    }
+
+    return [];
+  }, [stage, quizData, resultsData]);
 
   const handleStartQuiz = async (config: {
     documentIds: number[];
@@ -71,9 +188,10 @@ export default function QuizPage() {
 
       setQuizData(data);
       setStage('quiz');
-    } catch (err: any) {
-      setError(err.response?.data?.detail || err.message || 'Errore durante la generazione del quiz');
-      console.error('Error generating quiz:', err);
+    } catch (error: unknown) {
+      const message = extractErrorMessage(error, 'Errore durante la generazione del quiz');
+      setError(message);
+      console.error('Error generating quiz:', error);
     } finally {
       setIsLoading(false);
     }
@@ -93,9 +211,10 @@ export default function QuizPage() {
 
       setResultsData(data);
       setStage('results');
-    } catch (err: any) {
-      setError(err.response?.data?.detail || err.message || 'Errore durante l\'invio del quiz');
-      console.error('Error submitting quiz:', err);
+    } catch (error: unknown) {
+      const message = extractErrorMessage(error, "Errore durante l'invio del quiz");
+      setError(message);
+      console.error('Error submitting quiz:', error);
     } finally {
       setIsLoading(false);
     }
@@ -115,81 +234,185 @@ export default function QuizPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      <div className="container mx-auto px-4 py-8 max-w-5xl">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-3">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#050B1A] via-[#0B1226] to-[#050B1A] text-gray-100">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-32 -left-24 h-72 w-72 rounded-full bg-blue-500/20 blur-3xl" />
+        <div className="absolute top-1/3 -right-20 h-80 w-80 rounded-full bg-purple-500/20 blur-[110px]" />
+        <div className="absolute bottom-[-140px] left-1/3 h-96 w-96 rounded-full bg-emerald-500/15 blur-[130px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.06),_transparent_55%)]" />
+      </div>
+
+      <div className="relative z-10">
+        <header className="mx-auto flex max-w-6xl flex-col gap-8 px-6 pt-14 pb-6">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-4">
               <button
                 onClick={() => router.push('/dashboard')}
-                className="w-10 h-10 bg-gray-800/60 hover:bg-gray-700/60 border border-gray-700/50 rounded-lg flex items-center justify-center text-gray-300 hover:text-white transition-all"
-                title="Torna alla Dashboard"
+                className="group inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-gray-300 transition-all hover:-translate-x-1 hover:border-blue-400/60 hover:text-white"
+                title="Torna alla dashboard"
+                aria-label="Torna alla dashboard"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                <svg
+                  className="h-6 w-6 transition-transform group-hover:-translate-x-0.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.25} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
               </button>
-              <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg">
-                <span className="text-2xl">📝</span>
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-white">Quiz Studente</h1>
-                <p className="text-gray-400">Testa la tua comprensione dei documenti</p>
+              <div className="flex flex-col">
+                <h1 className="mt-4 text-3xl font-bold leading-tight text-white sm:text-4xl lg:text-[2.8rem]">
+                  Rispondi, impara e monitora i tuoi progressi con il Quiz AI
+                </h1>
+                <p className="mt-3 max-w-2xl text-sm text-gray-300 sm:text-base">
+                  Un flusso guidato in tre fasi ti accompagna dalla configurazione alla revisione, con un design coerente con il resto dell&apos;app in tema scuro.
+                </p>
               </div>
             </div>
+
             {stage !== 'config' && (
-              <Button onClick={handleNewQuiz} variant="secondary">
-                ← Nuovo Quiz
+              <Button
+                onClick={handleNewQuiz}
+                variant="secondary"
+                className="group flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-gray-100 transition-all hover:border-blue-400/60 hover:bg-blue-500/10"
+              >
+                <span className="text-lg transition-transform group-hover:-translate-x-0.5">↺</span>
+                Nuovo Quiz
               </Button>
             )}
           </div>
-        </div>
 
-        {/* Error Display */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/50 rounded-lg backdrop-blur-sm">
-            <div className="flex items-center gap-2">
-              <svg
-                className="w-5 h-5 text-red-400 flex-shrink-0"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <p className="text-red-400 font-medium">{error}</p>
-            </div>
+          <div className="flex flex-wrap items-center gap-3">
+            {STAGE_FLOW.map((step, index) => {
+              const isActive = stage === step.id;
+              const isCompleted = stageIndex > index;
+              const baseClasses = 'flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm transition-all';
+              const stateClasses = isActive
+                ? 'border-blue-400/60 bg-blue-500/15 text-white shadow-[0_0_20px_rgba(59,130,246,0.25)]'
+                : isCompleted
+                ? 'border-emerald-400/40 bg-emerald-500/10 text-emerald-200'
+                : 'border-white/10 bg-white/5 text-gray-400';
+
+              return (
+                <React.Fragment key={step.id}>
+                  <div className={`${baseClasses} ${stateClasses}`}>
+                    <span className="text-lg">{step.icon}</span>
+                    <span className="font-semibold uppercase tracking-[0.25em] text-xs sm:text-sm">
+                      {step.label}
+                    </span>
+                  </div>
+                  {index < STAGE_FLOW.length - 1 && (
+                    <div className="hidden h-px flex-1 min-w-[40px] bg-gradient-to-r from-white/10 via-white/20 to-transparent md:block" />
+                  )}
+                </React.Fragment>
+              );
+            })}
           </div>
-        )}
+        </header>
 
-        {/* Main Content */}
-        {stage === 'config' && (
-          <QuizConfig onStartQuiz={handleStartQuiz} isLoading={isLoading} />
-        )}
+        <main className="mx-auto grid max-w-6xl gap-8 px-6 pb-16 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <section className="space-y-6">
+            {error && (
+              <div className="rounded-2xl border border-rose-400/40 bg-rose-500/15 p-4 text-rose-100 shadow-lg">
+                <div className="flex items-start gap-3">
+                  <svg className="mt-0.5 h-5 w-5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <div>
+                    <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-rose-200">Errore</h3>
+                    <p className="mt-1 text-sm text-rose-100 lg:text-base">{error}</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
-        {stage === 'quiz' && quizData && (
-          <Quiz
-            questions={quizData.questions}
-            onSubmit={handleSubmitQuiz}
-            isSubmitting={isLoading}
-          />
-        )}
+            <div className="rounded-[28px] border border-white/10 bg-white/5 p-1 shadow-[0_25px_80px_rgba(0,0,0,0.45)] backdrop-blur">
+              <div className="rounded-[24px] border border-white/10 bg-[#0B1327]/80 p-6 sm:p-8">
+                {stage === 'config' && (
+                  <QuizConfig onStartQuiz={handleStartQuiz} isLoading={isLoading} />
+                )}
 
-        {stage === 'results' && resultsData && (
-          <QuizResults
-            totalQuestions={resultsData.total_questions}
-            correctAnswers={resultsData.correct_answers}
-            scorePercentage={resultsData.score_percentage}
-            corrections={resultsData.corrections}
-            overallFeedback={resultsData.overall_feedback}
-            onRetry={handleRetry}
-            onNewQuiz={handleNewQuiz}
-          />
-        )}
+                {stage === 'quiz' && quizData && (
+                  <Quiz
+                    questions={quizData.questions}
+                    onSubmit={handleSubmitQuiz}
+                    isSubmitting={isLoading}
+                  />
+                )}
+
+                {stage === 'results' && resultsData && (
+                  <QuizResults
+                    totalQuestions={resultsData.total_questions}
+                    correctAnswers={resultsData.correct_answers}
+                    scorePercentage={resultsData.score_percentage}
+                    corrections={resultsData.corrections}
+                    overallFeedback={resultsData.overall_feedback}
+                    onRetry={handleRetry}
+                    onNewQuiz={handleNewQuiz}
+                  />
+                )}
+              </div>
+            </div>
+          </section>
+
+          <aside className="space-y-6">
+            <div className={`overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br ${stageMeta.accent} p-6 sm:p-7 backdrop-blur` }>
+              <div className="flex items-start gap-4">
+                <span className="text-3xl" aria-hidden>{stageMeta.icon}</span>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.4em] text-gray-300">Stato attuale</p>
+                  <h2 className="mt-2 text-xl font-semibold text-white sm:text-2xl">{stageMeta.title}</h2>
+                  <p className="mt-3 text-sm leading-relaxed text-gray-100/85">
+                    {stageMeta.subtitle}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-3">
+                {stageMeta.tips.map((tip, index) => (
+                  <div
+                    key={`${tip.icon}-${index}`}
+                    className="flex items-start gap-3 rounded-2xl border border-white/10 bg-[#0B1327]/70 px-4 py-3 text-sm text-gray-200"
+                  >
+                    <span className="mt-0.5 text-lg" aria-hidden>{tip.icon}</span>
+                    <p className="leading-relaxed">{tip.text}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {stageStats.length > 0 && (
+              <div className="rounded-3xl border border-white/10 bg-[#0B1327]/80 p-6 backdrop-blur">
+                <p className="text-xs font-semibold uppercase tracking-[0.4em] text-gray-400">Metriche rapide</p>
+                <div className="mt-5 space-y-4">
+                  {stageStats.map((stat) => (
+                    <div
+                      key={stat.label}
+                      className="flex items-start justify-between gap-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-gray-200"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl" aria-hidden>{stat.icon}</span>
+                        <div className="leading-tight">
+                          <p className="text-[0.65rem] uppercase tracking-[0.3em] text-gray-400">{stat.label}</p>
+                          <p className="mt-1 text-lg font-semibold text-white">{stat.value}</p>
+                        </div>
+                      </div>
+                      {stat.helper && (
+                        <p className="max-w-[180px] text-right text-xs leading-snug text-gray-400">{stat.helper}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </aside>
+        </main>
       </div>
     </div>
   );

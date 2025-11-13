@@ -64,26 +64,26 @@ export const Quiz: React.FC<QuizProps> = ({ questions, onSubmit, isSubmitting = 
     <div className="space-y-6">
       {/* Progress Bar */}
       <div className="flex items-center gap-4">
-        <div className="flex-1 bg-gray-700/50 rounded-full h-3 shadow-inner">
+        <div className="flex-1 h-2 rounded-full bg-white/10">
           <div
-            className="bg-gradient-to-r from-emerald-500 to-teal-500 h-3 rounded-full transition-all duration-300 shadow-lg"
+            className="h-2 rounded-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 transition-all duration-300"
             style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
           />
         </div>
-        <span className="text-sm text-gray-300 font-medium min-w-fit bg-gray-800/50 px-3 py-1 rounded-full border border-gray-700/50">
+        <span className="text-sm text-gray-300 font-medium min-w-fit">
           {currentQuestionIndex + 1} / {questions.length}
         </span>
       </div>
 
       {/* Question Card */}
-      <Card className="p-6 bg-gradient-to-br from-gray-800/80 to-gray-800/60 backdrop-blur-sm border-gray-700/50 shadow-xl">
+      <Card className="p-6 bg-[#0B1327]/70 backdrop-blur border-white/10 shadow-xl">
         <div className="space-y-6">
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-sm font-medium text-emerald-400 bg-gradient-to-r from-emerald-500/30 to-teal-500/30 px-3 py-1 rounded-full border border-emerald-500/50">
-                <span className="mr-1">❓</span> Domanda {currentQuestionIndex + 1}
+              <span className="rounded-full bg-blue-500/15 px-3 py-1 text-sm font-medium text-blue-300">
+                Domanda {currentQuestionIndex + 1}
               </span>
-              <span className="text-xs text-gray-400 bg-gray-700/50 px-2 py-1 rounded border border-gray-600/50">
+              <span className="rounded px-2 py-1 text-xs text-gray-300 bg-white/5">
                 {currentQuestion.type === 'multiple_choice' ? 'Risposta multipla' : 'Risposta aperta'}
               </span>
             </div>
@@ -96,10 +96,10 @@ export const Quiz: React.FC<QuizProps> = ({ questions, onSubmit, isSubmitting = 
               {currentQuestion.options.map((option) => (
                 <label
                   key={option.id}
-                  className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all hover:scale-[1.02] ${
+                  className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
                     currentAnswer === option.id
-                      ? 'border-emerald-500 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 shadow-lg shadow-emerald-500/20'
-                      : 'border-gray-700 hover:border-gray-600 hover:bg-gray-800/50 bg-gray-800/30'
+                      ? 'border-blue-400/60 bg-blue-500/15 shadow-lg shadow-blue-900/40'
+                      : 'border-white/10 bg-white/5 hover:border-blue-400/40 hover:bg-blue-500/10'
                   }`}
                 >
                   <input
@@ -108,7 +108,7 @@ export const Quiz: React.FC<QuizProps> = ({ questions, onSubmit, isSubmitting = 
                     value={option.id}
                     checked={currentAnswer === option.id}
                     onChange={(e) => handleAnswer(currentQuestion.id, e.target.value)}
-                    className="mt-1 w-4 h-4 text-emerald-500 bg-gray-700 border-gray-600"
+                    className="mt-1 h-4 w-4 border border-white/20 bg-[#0B1327]/70 text-blue-500"
                   />
                   <div className="flex-1">
                     <span className="font-medium text-white">{option.id}.</span>{' '}
@@ -126,7 +126,7 @@ export const Quiz: React.FC<QuizProps> = ({ questions, onSubmit, isSubmitting = 
                 value={currentAnswer}
                 onChange={(e) => handleAnswer(currentQuestion.id, e.target.value)}
                 placeholder="Scrivi la tua risposta qui..."
-                className="w-full h-40 p-4 border-2 border-gray-700 bg-gray-800/50 text-white rounded-lg focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 resize-none placeholder-gray-500 transition-all"
+                className="h-40 w-full resize-none rounded-lg border-2 border-white/10 bg-[#0B1327]/70 p-4 text-white placeholder-gray-500 focus:border-blue-400 focus:outline-none"
               />
               <p className="text-sm text-gray-400 mt-2">
                 {currentAnswer.length} caratteri
@@ -142,6 +142,7 @@ export const Quiz: React.FC<QuizProps> = ({ questions, onSubmit, isSubmitting = 
           onClick={handlePrevious}
           disabled={isFirstQuestion}
           variant="secondary"
+          className="rounded-xl border border-white/10 bg-white/5 px-5 py-2 text-sm font-semibold text-gray-100 hover:border-blue-400/40 hover:bg-blue-500/10"
         >
           ← Precedente
         </Button>
@@ -153,9 +154,9 @@ export const Quiz: React.FC<QuizProps> = ({ questions, onSubmit, isSubmitting = 
               onClick={() => setCurrentQuestionIndex(index)}
               className={`w-2.5 h-2.5 rounded-full transition-all ${
                 index === currentQuestionIndex
-                  ? 'bg-emerald-500 w-6 shadow-lg shadow-emerald-500/50'
+                  ? 'bg-blue-500 w-6'
                   : answers[questions[index].id]
-                  ? 'bg-teal-500 shadow-md shadow-teal-500/50'
+                  ? 'bg-green-500'
                   : 'bg-gray-700'
               }`}
               aria-label={`Vai alla domanda ${index + 1}`}
@@ -164,14 +165,18 @@ export const Quiz: React.FC<QuizProps> = ({ questions, onSubmit, isSubmitting = 
         </div>
 
         {!isLastQuestion ? (
-          <Button onClick={handleNext} disabled={!hasAnswer}>
+          <Button
+            onClick={handleNext}
+            disabled={!hasAnswer}
+            className="rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 px-5 py-2 font-semibold shadow-lg shadow-blue-900/40 hover:from-blue-400 hover:to-indigo-400"
+          >
             Successiva →
           </Button>
         ) : (
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting || Object.keys(answers).length < questions.length}
-            className="bg-green-600 hover:bg-green-700"
+            className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-5 py-2 font-semibold shadow-lg shadow-emerald-900/40 hover:from-emerald-400 hover:to-teal-400"
           >
             {isSubmitting ? 'Invio in corso...' : 'Invia Quiz'}
           </Button>
@@ -179,14 +184,14 @@ export const Quiz: React.FC<QuizProps> = ({ questions, onSubmit, isSubmitting = 
       </div>
 
       {/* Answer Summary */}
-      <Card className="p-4 bg-gray-800/50 backdrop-blur-sm border-gray-700/50">
+      <Card className="p-4 bg-[#0B1327]/70 backdrop-blur border-white/10">
         <div className="flex items-center justify-between text-sm">
           <span className="text-gray-400">
             Risposte completate: <span className="font-semibold text-white">{Object.keys(answers).length}</span> su{' '}
             <span className="font-semibold text-white">{questions.length}</span>
           </span>
           {Object.keys(answers).length < questions.length && (
-            <span className="text-amber-400 flex items-center gap-1">
+            <span className="flex items-center gap-1 text-amber-300">
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path
                   fillRule="evenodd"

@@ -482,8 +482,13 @@ Quiz questions and user answers:
 
 For each question:
 1. Evaluate if the user's answer is correct
-2. For multiple choice: check if the selected option matches the correct answer
-3. For open-ended: evaluate if the answer demonstrates understanding (be flexible but thorough)
+2. For multiple choice: check if the selected option matches the correct answer exactly
+3. For open-ended questions: BE VERY TOLERANT and FLEXIBLE
+   - Accept answers that demonstrate understanding even if not perfectly worded
+   - Focus on the CORE CONCEPTS rather than exact wording
+   - Give credit for partial understanding
+   - Accept paraphrasing and different explanations if they capture the main idea
+   - Consider the answer correct if it shows the student understood the key points
 4. Provide a clear explanation of the correct answer
 5. If the answer is wrong or incomplete, explain what was missing or incorrect
 6. Reference specific parts of the document(s) when explaining
@@ -506,9 +511,15 @@ Return your response in JSON format:
 
 Score guidelines:
 - Multiple choice: 1.0 if correct, 0.0 if wrong
-- Open-ended: 0.0-1.0 based on completeness and accuracy
+- Open-ended: Be generous with scoring (0.0-1.0 based on understanding)
+  * 1.0: Answer demonstrates clear understanding (even if not perfect)
+  * 0.7-0.9: Answer shows good understanding but missing minor details
+  * 0.5-0.6: Answer shows partial understanding
+  * 0.0-0.4: Answer is mostly incorrect or missing key concepts
 
-Important: Return ONLY the JSON object, no additional text."""
+IMPORTANT: For open-ended questions, prioritize understanding over perfection. Don't penalize for different wording or style.
+
+Return ONLY the JSON object, no additional text."""
 
             content_parts = [prompt] + files
             response = self.model.generate_content(
