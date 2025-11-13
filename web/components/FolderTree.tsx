@@ -82,7 +82,12 @@ export function FolderTree({
   };
 
   const getFolderDocuments = (folderId?: number) => {
-    return documents.filter((doc) => doc.folder_id === folderId);
+    return documents.filter((doc) => {
+      if (folderId === undefined) {
+        return doc.folder_id === null || doc.folder_id === undefined;
+      }
+      return doc.folder_id === folderId;
+    });
   };
 
   const renderFolder = (folder: Folder, level: number = 0) => {
@@ -143,12 +148,7 @@ export function FolderTree({
   const rootDocuments = getFolderDocuments(undefined);
 
   return (
-    <div
-      className="space-y-1"
-      onDragOver={(e) => handleDragOver(e, undefined)}
-      onDragLeave={handleDragLeave}
-      onDrop={(e) => handleDrop(e, undefined)}
-    >
+    <div className="space-y-1">
       {/* Create folder button at root */}
       {onFolderCreate && (
         <button
@@ -163,20 +163,48 @@ export function FolderTree({
       {/* Render root folders */}
       {folders.map((folder) => renderFolder(folder, 0))}
 
-      {/* Render root documents */}
-      {rootDocuments.map((doc) => (
-        <DocumentItem
-          key={doc.id}
-          document={doc}
-          level={0}
-          onClick={() => onDocumentClick?.(doc)}
-          isSelected={selectedDocumentIds.includes(doc.id)}
-          onToggle={() => onDocumentToggle?.(doc.id)}
-          showCheckbox={showCheckboxes}
-          onDragStart={() => handleDragStart(doc)}
-          onDragEnd={handleDragEnd}
-        />
-      ))}
+      {/* Root Documents Section */}
+      {(rootDocuments.length > 0 || dropTarget === "root") && (
+        <div
+          className={`mt-2 rounded-lg border-2 transition-all ${
+            dropTarget === "root"
+              ? "border-blue-500 border-dashed bg-blue-900/20"
+              : "border-transparent"
+          }`}
+          onDragOver={(e) => handleDragOver(e, undefined)}
+          onDragLeave={handleDragLeave}
+          onDrop={(e) => handleDrop(e, undefined)}
+        >
+          {rootDocuments.length > 0 ? (
+            <>
+              <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2">
+                <span>📂</span>
+                <span>Uncategorized Files</span>
+                <span className="text-gray-600">({rootDocuments.length})</span>
+              </div>
+              <div className="space-y-1">
+                {rootDocuments.map((doc) => (
+                  <DocumentItem
+                    key={doc.id}
+                    document={doc}
+                    level={0}
+                    onClick={() => onDocumentClick?.(doc)}
+                    isSelected={selectedDocumentIds.includes(doc.id)}
+                    onToggle={() => onDocumentToggle?.(doc.id)}
+                    showCheckbox={showCheckboxes}
+                    onDragStart={() => handleDragStart(doc)}
+                    onDragEnd={handleDragEnd}
+                  />
+                ))}
+              </div>
+            </>
+          ) : dropTarget === "root" ? (
+            <div className="px-3 py-8 text-center text-gray-400 text-sm">
+              Drop here to move to root
+            </div>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 }

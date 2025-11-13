@@ -11,7 +11,7 @@ from app.models.folder import Folder
 from app.utils.dependencies import get_current_user
 from app.utils.file_handler import FileHandler
 from app.services.gemini_service import gemini_service
-from app.schemas.document import DocumentResponse, DocumentListResponse
+from app.schemas.document import DocumentResponse, DocumentListResponse, DocumentUpdate
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
@@ -253,7 +253,7 @@ async def delete_document(
 @router.patch("/{document_id}", response_model=DocumentResponse)
 async def update_document(
     document_id: int,
-    folder_id: Optional[int] = None,
+    update_data: DocumentUpdate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -262,7 +262,7 @@ async def update_document(
 
     Args:
         document_id: Document ID
-        folder_id: New folder ID (None for root)
+        update_data: Update data with folder_id
         current_user: Current authenticated user
         db: Database session
 
@@ -282,10 +282,10 @@ async def update_document(
         )
 
     # Validate folder if provided
-    if folder_id is not None:
+    if update_data.folder_id is not None:
         folder = (
             db.query(Folder)
-            .filter(Folder.id == folder_id, Folder.user_id == current_user.id)
+            .filter(Folder.id == update_data.folder_id, Folder.user_id == current_user.id)
             .first()
         )
         if not folder:
@@ -295,7 +295,7 @@ async def update_document(
             )
 
     # Update folder
-    document.folder_id = folder_id
+    document.folder_id = update_data.folder_id
     db.commit()
     db.refresh(document)
 

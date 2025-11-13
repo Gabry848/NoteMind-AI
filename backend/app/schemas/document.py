@@ -32,6 +32,12 @@ class DocumentListResponse(BaseModel):
     total: int
 
 
+class DocumentUpdate(BaseModel):
+    """Schema for document update request"""
+
+    folder_id: Optional[int] = None
+
+
 class SummaryRequest(BaseModel):
     """Schema for summary generation request"""
 
