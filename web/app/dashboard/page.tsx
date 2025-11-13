@@ -10,12 +10,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useDocumentsStore } from "@/store/useDocumentsStore";
 import { Button } from "@/components/Button";
+import { useSettingsStore, isEventMatchingShortcut, prettyShortcut } from "@/store/useSettingsStore";
 import type { Document } from "@/types";
 
 export default function DashboardPage() {
   const router = useRouter();
   const { user, logout, checkAuth } = useAuthStore();
   const { documents, fetchDocuments, selectDocument, isLoading } = useDocumentsStore();
+  const { shortcuts, showShortcutsHelpInDashboard } = useSettingsStore();
   const [showFABMenu, setShowFABMenu] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -31,26 +33,35 @@ export default function DashboardPage() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        switch (e.key) {
-          case 'k':
-            e.preventDefault();
-            router.push('/multi-chat');
-            break;
-          case 'u':
-            e.preventDefault();
-            router.push('/documents');
-            break;
-          case 'b':
-            e.preventDefault();
-            setSidebarCollapsed(!sidebarCollapsed);
-            break;
-        }
+      if (isEventMatchingShortcut(e, shortcuts.openChat)) {
+        e.preventDefault();
+        router.push('/multi-chat');
+        return;
+      }
+      if (isEventMatchingShortcut(e, shortcuts.upload)) {
+        e.preventDefault();
+        router.push('/documents');
+        return;
+      }
+      if (isEventMatchingShortcut(e, shortcuts.toggleSidebar)) {
+        e.preventDefault();
+        setSidebarCollapsed((v) => !v);
+        return;
+      }
+      if (isEventMatchingShortcut(e, shortcuts.openDocuments)) {
+        e.preventDefault();
+        router.push('/documents');
+        return;
+      }
+      if (isEventMatchingShortcut(e, shortcuts.openQuiz)) {
+        e.preventDefault();
+        router.push('/quiz');
+        return;
       }
     };
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [router, sidebarCollapsed]);
+  }, [router, shortcuts]);
 
   const handleDocumentClick = (doc: Document) => {
     selectDocument(doc);
@@ -69,10 +80,10 @@ export default function DashboardPage() {
   };
 
   const quickActions = [
-    { icon: '💬', label: 'Multi Chat', action: () => router.push('/multi-chat'), shortcut: '⌘K' },
-    { icon: '📁', label: 'Documents', action: () => router.push('/documents'), shortcut: '⌘D' },
-    { icon: '📝', label: 'Quiz', action: () => router.push('/quiz'), shortcut: '⌘Q' },
-    { icon: '➕', label: 'Upload', action: () => router.push('/documents'), shortcut: '⌘U' },
+    { icon: '💬', label: 'Multi Chat', action: () => router.push('/multi-chat'), shortcut: prettyShortcut(shortcuts.openChat) },
+    { icon: '📁', label: 'Documents', action: () => router.push('/documents'), shortcut: prettyShortcut(shortcuts.openDocuments) },
+    { icon: '📝', label: 'Quiz', action: () => router.push('/quiz'), shortcut: prettyShortcut(shortcuts.openQuiz) },
+    { icon: '➕', label: 'Upload', action: () => router.push('/documents'), shortcut: prettyShortcut(shortcuts.upload) },
   ];
 
   return (
@@ -151,12 +162,23 @@ export default function DashboardPage() {
             <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">Beta</span>
           </div>
           <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-2 text-sm text-gray-400">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-              <span>Online</span>
-            </div>
             
-            {/* Quick Chat Button - Integrated in Header */}
+            <span className="text-gray-300 hidden sm:inline">
+              {user?.full_name || user?.email?.split('@')[0]}
+            </span>
+              <Button
+                variant="ghost"
+                onClick={() => router.push('/settings')}
+                className="hover:bg-blue-500/10 hover:text-blue-400"
+                aria-label="Impostazioni"
+              >
+                ⚙️
+              </Button>
+            <Button variant="ghost" onClick={logout} className="hover:bg-red-500/10 hover:text-red-400">
+              Logout
+            </Button>
+
+            {/* Quick Chat Button - moved to far right */}
             <motion.button
               initial={{ x: 20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
@@ -168,15 +190,10 @@ export default function DashboardPage() {
             >
               <span className="text-lg">💬</span>
               <span>Quick Chat</span>
-              <span className="text-xs opacity-75">⌘K</span>
+              {showShortcutsHelpInDashboard && (
+                <span className="text-xs opacity-75">{prettyShortcut(shortcuts.openChat)}</span>
+              )}
             </motion.button>
-            
-            <span className="text-gray-300 hidden sm:inline">
-              {user?.full_name || user?.email?.split('@')[0]}
-            </span>
-            <Button variant="ghost" onClick={logout} className="hover:bg-red-500/10 hover:text-red-400">
-              Logout
-            </Button>
           </div>
         </div>
       </div>
@@ -220,7 +237,9 @@ export default function DashboardPage() {
                   <span className="text-2xl group-hover:scale-110 transition-transform">{action.icon}</span>
                   <div className="text-left">
                     <div className="text-white font-medium text-sm">{action.label}</div>
-                    <div className="text-xs text-gray-500">{action.shortcut}</div>
+                    {showShortcutsHelpInDashboard && (
+                      <div className="text-xs text-gray-500">{action.shortcut}</div>
+                    )}
                   </div>
                 </motion.button>
               ))}
@@ -443,22 +462,24 @@ export default function DashboardPage() {
         )}
 
         {/* Keyboard Shortcuts Help */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1 }}
-          className="mt-8 bg-gray-800/30 backdrop-blur-sm rounded-lg border border-gray-700/30 p-4"
-        >
-          <h4 className="text-sm font-semibold text-gray-400 mb-3 flex items-center gap-2">
-            <span>⌨️</span> Keyboard Shortcuts
-          </h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-            <ShortcutItem shortcut="⌘ K" description="Open Chat" />
-            <ShortcutItem shortcut="⌘ Q" description="Quiz" />
-            <ShortcutItem shortcut="⌘ U" description="Upload File" />
-            <ShortcutItem shortcut="⌘ D" description="Documents" />
-          </div>
-        </motion.div>
+        {showShortcutsHelpInDashboard && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1 }}
+            className="mt-8 bg-gray-800/30 backdrop-blur-sm rounded-lg border border-gray-700/30 p-4"
+          >
+            <h4 className="text-sm font-semibold text-gray-400 mb-3 flex items-center gap-2">
+              <span>⌨️</span> Scorciatoie
+            </h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+              <ShortcutItem shortcut={prettyShortcut(shortcuts.openChat)} description="Apri Chat" />
+              <ShortcutItem shortcut={prettyShortcut(shortcuts.openQuiz)} description="Apri Quiz" />
+              <ShortcutItem shortcut={prettyShortcut(shortcuts.upload)} description="Upload" />
+              <ShortcutItem shortcut={prettyShortcut(shortcuts.openDocuments)} description="Documenti" />
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   );

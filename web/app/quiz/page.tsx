@@ -264,7 +264,7 @@ export default function QuizPage() {
               </button>
               <div className="flex flex-col">
                 <h1 className="mt-4 text-3xl font-bold leading-tight text-white sm:text-4xl lg:text-[2.8rem]">
-                  Rispondi, impara e monitora i tuoi progressi con il Quiz AI
+                  Rispondi, impara con il Quiz AI
                 </h1>
                 <p className="mt-3 max-w-2xl text-sm text-gray-300 sm:text-base">
                   Un flusso guidato in tre fasi ti accompagna dalla configurazione alla revisione, con un design coerente con il resto dell&apos;app in tema scuro.
