@@ -115,29 +115,29 @@ export default function DocumentPage() {
 
   if (!selectedDocument) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-blue-600"></div>
-          <p className="mt-4 text-gray-600">Loading document...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-700 border-t-blue-500"></div>
+          <p className="mt-4 text-gray-400">Loading document...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gray-900">
       {/* Header */}
-      <div className="bg-white shadow-sm">
+      <div className="bg-gray-800 border-b border-gray-700 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center gap-4">
             <Button variant="ghost" onClick={() => router.push("/dashboard")}>
               ← Back
             </Button>
             <div className="flex-1">
-              <h1 className="text-xl font-semibold text-gray-900">
+              <h1 className="text-xl font-semibold text-white">
                 {selectedDocument.original_filename}
               </h1>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-400">
                 {(selectedDocument.file_size / 1024).toFixed(1)} KB • {selectedDocument.status}
               </p>
             </div>
@@ -153,7 +153,7 @@ export default function DocumentPage() {
             className={`px-6 py-3 rounded-lg font-medium transition-all ${
               activeTab === "chat"
                 ? "bg-blue-600 text-white shadow-md"
-                : "bg-white text-gray-600 hover:bg-gray-50"
+                : "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700"
             }`}
           >
             💬 Chat
@@ -166,7 +166,7 @@ export default function DocumentPage() {
             className={`px-6 py-3 rounded-lg font-medium transition-all ${
               activeTab === "summary"
                 ? "bg-blue-600 text-white shadow-md"
-                : "bg-white text-gray-600 hover:bg-gray-50"
+                : "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700"
             }`}
           >
             📊 Summary
@@ -177,14 +177,14 @@ export default function DocumentPage() {
         {activeTab === "chat" ? (
           <div className="grid grid-cols-1 gap-6">
             {/* Chat Messages */}
-            <Card className="h-[600px] flex flex-col">
+            <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-md h-[600px] flex flex-col">
               {/* New Chat Button */}
-              <div className="border-b px-4 py-2 flex justify-end">
+              <div className="border-b border-gray-700 px-4 py-2 flex justify-end">
                 <Button
                   onClick={handleNewChat}
                   variant="ghost"
                   size="sm"
-                  className="text-blue-600 hover:bg-blue-50"
+                  className="text-blue-400 hover:bg-gray-700"
                 >
                   ➕ New Chat
                 </Button>
@@ -194,10 +194,10 @@ export default function DocumentPage() {
                 {messages.length === 0 ? (
                   <div className="text-center py-12">
                     <div className="text-6xl mb-4">💬</div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    <h3 className="text-xl font-semibold text-white mb-2">
                       Start a conversation
                     </h3>
-                    <p className="text-gray-600">
+                    <p className="text-gray-400">
                       Ask questions about your document
                     </p>
                   </div>
@@ -208,7 +208,7 @@ export default function DocumentPage() {
                 )}
                 {isLoading && (
                   <div className="flex justify-start">
-                    <div className="bg-gray-100 rounded-lg p-4">
+                    <div className="bg-gray-700 rounded-lg p-4">
                       <div className="flex space-x-2">
                         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                         <div
@@ -226,7 +226,7 @@ export default function DocumentPage() {
               </div>
 
               {/* Input */}
-              <div className="border-t p-4">
+              <div className="border-t border-gray-700 p-4">
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -234,7 +234,7 @@ export default function DocumentPage() {
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
                     placeholder="Ask a question..."
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 text-white placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     disabled={isLoading}
                   />
                   <Button
@@ -246,29 +246,29 @@ export default function DocumentPage() {
                   </Button>
                 </div>
               </div>
-            </Card>
+            </div>
           </div>
         ) : (
-          <Card>
+          <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-md p-6">
             {summary ? (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">Summary</h2>
-                  <div className="prose max-w-none text-gray-700 whitespace-pre-wrap">
+                  <h2 className="text-2xl font-bold text-white mb-4">Summary</h2>
+                  <div className="prose max-w-none text-gray-300 whitespace-pre-wrap">
                     {summary.summary}
                   </div>
                 </div>
 
                 {summary.topics.length > 0 && (
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                    <h3 className="text-xl font-semibold text-white mb-3">
                       Key Topics
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {summary.topics.map((topic, idx) => (
                         <span
                           key={idx}
-                          className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                          className="px-3 py-1 bg-blue-900/30 text-blue-400 border border-blue-800 rounded-full text-sm"
                         >
                           {topic}
                         </span>
@@ -285,16 +285,16 @@ export default function DocumentPage() {
               <div className="text-center py-12">
                 {isLoading ? (
                   <>
-                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-blue-600 mb-4"></div>
-                    <p className="text-gray-600">Generating summary...</p>
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-700 border-t-blue-500 mb-4"></div>
+                    <p className="text-gray-400">Generating summary...</p>
                   </>
                 ) : (
                   <>
                     <div className="text-6xl mb-4">📊</div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    <h3 className="text-xl font-semibold text-white mb-2">
                       No summary yet
                     </h3>
-                    <p className="text-gray-600 mb-6">
+                    <p className="text-gray-400 mb-6">
                       Generate a summary to see key insights
                     </p>
                     <Button onClick={handleGenerateSummary} variant="primary">
@@ -304,7 +304,7 @@ export default function DocumentPage() {
                 )}
               </div>
             )}
-          </Card>
+          </div>
         )}
       </div>
     </div>
@@ -324,7 +324,7 @@ function ChatBubble({ message }: { message: ChatMessage }) {
         className={`max-w-[70%] rounded-lg p-4 ${
           isUser
             ? "bg-blue-600 text-white"
-            : "bg-gray-100 text-gray-900"
+            : "bg-gray-700 text-gray-100"
         }`}
       >
         {isUser ? (
@@ -344,14 +344,14 @@ function ChatBubble({ message }: { message: ChatMessage }) {
                 h3: ({node, ...props}) => <h3 className="text-lg font-bold mt-3 mb-2" {...props} />,
                 code: ({node, inline, ...props}: any) => 
                   inline ? 
-                    <code className="bg-gray-200 px-1 py-0.5 rounded text-sm font-mono" {...props} /> :
-                    <code className="block bg-gray-800 text-white p-3 rounded my-2 overflow-x-auto font-mono text-sm" {...props} />,
+                    <code className="bg-gray-600 px-1 py-0.5 rounded text-sm font-mono" {...props} /> :
+                    <code className="block bg-gray-900 text-white p-3 rounded my-2 overflow-x-auto font-mono text-sm" {...props} />,
                 pre: ({node, ...props}) => <pre className="my-2" {...props} />,
-                a: ({node, ...props}) => <a className="text-blue-600 hover:underline" {...props} />,
-                blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-gray-300 pl-4 italic my-2" {...props} />,
-                table: ({node, ...props}) => <table className="border-collapse border border-gray-300 my-2" {...props} />,
-                th: ({node, ...props}) => <th className="border border-gray-300 px-2 py-1 bg-gray-200 font-semibold" {...props} />,
-                td: ({node, ...props}) => <td className="border border-gray-300 px-2 py-1" {...props} />,
+                a: ({node, ...props}) => <a className="text-blue-400 hover:underline" {...props} />,
+                blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-gray-500 pl-4 italic my-2" {...props} />,
+                table: ({node, ...props}) => <table className="border-collapse border border-gray-600 my-2" {...props} />,
+                th: ({node, ...props}) => <th className="border border-gray-600 px-2 py-1 bg-gray-600 font-semibold" {...props} />,
+                td: ({node, ...props}) => <td className="border border-gray-600 px-2 py-1" {...props} />,
               }}
             >
               {message.content}
@@ -359,7 +359,7 @@ function ChatBubble({ message }: { message: ChatMessage }) {
           </div>
         )}
         {message.citations && message.citations.length > 0 && (
-          <div className="mt-2 pt-2 border-t border-gray-300">
+          <div className="mt-2 pt-2 border-t border-gray-600">
             <p className="text-xs opacity-75">Citations:</p>
             {message.citations.map((citation, idx) => (
               <p key={idx} className="text-xs opacity-75 mt-1">

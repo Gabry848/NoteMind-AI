@@ -55,15 +55,15 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gray-900">
       {/* Header */}
-      <div className="bg-white shadow-sm">
+      <div className="bg-gray-800 border-b border-gray-700 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
             NoteMind AI
           </h1>
           <div className="flex items-center gap-4">
-            <span className="text-gray-600">Hi, {user?.full_name || user?.email}</span>
+            <span className="text-gray-300">Hi, {user?.full_name || user?.email}</span>
             <Button variant="ghost" onClick={logout}>
               Logout
             </Button>
@@ -76,8 +76,8 @@ export default function DashboardPage() {
         <div className="mb-12">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">Your Documents</h2>
-              <p className="text-gray-600">
+              <h2 className="text-3xl font-bold text-white mb-2">Your Documents</h2>
+              <p className="text-gray-400">
                 Upload and chat with your documents using AI
               </p>
             </div>
@@ -122,15 +122,15 @@ export default function DashboardPage() {
             animate={{ opacity: 1, y: 0 }}
             className="mb-6"
           >
-            <Card>
-              <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 flex items-center justify-between">
+            <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-md">
+              <div className="p-4 bg-gradient-to-r from-blue-900/30 to-purple-900/30 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <span className="text-3xl">✨</span>
                   <div>
-                    <p className="font-semibold text-gray-900">
+                    <p className="font-semibold text-white">
                       Try Multi-Document Chat!
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-400">
                       You have {documents.filter(d => d.status === "ready").length} documents ready. 
                       Chat with multiple documents at once for deeper insights.
                     </p>
@@ -143,24 +143,24 @@ export default function DashboardPage() {
                   Start Multi-Chat →
                 </Button>
               </div>
-            </Card>
+            </div>
           </motion.div>
         )}
 
         {/* Documents Grid */}
         {isLoading ? (
           <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-blue-600"></div>
-            <p className="mt-4 text-gray-600">Loading documents...</p>
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-700 border-t-blue-500"></div>
+            <p className="mt-4 text-gray-400">Loading documents...</p>
           </div>
         ) : documents.length === 0 ? (
-          <Card>
+          <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-md">
             <div className="text-center py-12">
               <div className="text-6xl mb-4">📄</div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              <h3 className="text-xl font-semibold text-white mb-2">
                 No documents yet
               </h3>
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-400 mb-6">
                 Upload your first document to get started
               </p>
               <Button
@@ -170,7 +170,7 @@ export default function DashboardPage() {
                 Upload Document
               </Button>
             </div>
-          </Card>
+          </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {documents.map((doc) => (
@@ -200,13 +200,13 @@ function DocumentCard({
   const getStatusColor = (status: string) => {
     switch (status) {
       case "ready":
-        return "bg-green-100 text-green-800";
+        return "bg-green-900/30 text-green-400 border border-green-800";
       case "processing":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-yellow-900/30 text-yellow-400 border border-yellow-800";
       case "error":
-        return "bg-red-100 text-red-800";
+        return "bg-red-900/30 text-red-400 border border-red-800";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-700 text-gray-400 border border-gray-600";
     }
   };
 
@@ -215,13 +215,13 @@ function DocumentCard({
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      className="bg-white rounded-xl shadow-md p-6 cursor-pointer hover:shadow-xl transition-all duration-300"
+      className="bg-gray-800 rounded-xl shadow-md p-6 cursor-pointer hover:shadow-xl transition-all duration-300 border border-gray-700"
     >
       <div className="flex justify-between items-start mb-4">
         <div className="text-4xl">📄</div>
         <button
           onClick={onDelete}
-          className="text-gray-400 hover:text-red-600 transition-colors"
+          className="text-gray-500 hover:text-red-400 transition-colors"
         >
           <svg
             className="w-5 h-5"
@@ -239,7 +239,7 @@ function DocumentCard({
         </button>
       </div>
 
-      <h3 className="font-semibold text-gray-900 mb-2 truncate">
+      <h3 className="font-semibold text-white mb-2 truncate">
         {document.original_filename}
       </h3>
 
@@ -252,11 +252,11 @@ function DocumentCard({
           {document.status}
         </span>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">
+          <span className="text-sm text-gray-400">
             {(document.file_size / 1024).toFixed(1)} KB
           </span>
           {document.status === "ready" && (
-            <span className="text-xs text-blue-600" title="Ready to chat">
+            <span className="text-xs text-blue-400" title="Ready to chat">
               💬
             </span>
           )}
@@ -264,7 +264,7 @@ function DocumentCard({
       </div>
 
       {document.error_message && (
-        <p className="mt-2 text-xs text-red-600">{document.error_message}</p>
+        <p className="mt-2 text-xs text-red-400">{document.error_message}</p>
       )}
     </motion.div>
   );

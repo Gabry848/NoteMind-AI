@@ -30,7 +30,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -38,14 +38,14 @@ export default function RegisterPage() {
       >
         <div className="text-center mb-8">
           <Link href="/">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent mb-2">
               NoteMind AI
             </h1>
           </Link>
-          <p className="text-gray-600">Create your account to get started.</p>
+          <p className="text-gray-400">Create your account to get started.</p>
         </div>
 
-        <Card>
+        <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             <Input
               type="text"
@@ -74,8 +74,8 @@ export default function RegisterPage() {
             />
 
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600">{error}</p>
+              <div className="p-3 bg-red-900/30 border border-red-500/50 rounded-lg">
+                <p className="text-sm text-red-400">{error}</p>
               </div>
             )}
 
@@ -84,13 +84,13 @@ export default function RegisterPage() {
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-gray-600">
+          <div className="mt-6 text-center text-sm text-gray-400">
             Already have an account?{" "}
-            <Link href="/login" className="text-blue-600 hover:underline font-medium">
+            <Link href="/login" className="text-blue-400 hover:underline font-medium">
               Login
             </Link>
           </div>
-        </Card>
+        </div>
       </motion.div>
     </div>
   );
