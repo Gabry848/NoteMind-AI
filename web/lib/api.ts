@@ -164,4 +164,22 @@ export const folders = {
   },
 };
 
+// Analytics API
+export const analytics = {
+  getOverview: async () => {
+    const response = await api.get("/analytics/overview");
+    return response.data;
+  },
+
+  getActivity: async (days: number = 7) => {
+    const response = await api.get(`/analytics/activity?days=${days}`);
+    return response.data;
+  },
+
+  getSummary: async () => {
+    const response = await api.get("/analytics/summary");
+    return response.data;
+  },
+};
+
 export default api;

@@ -296,7 +296,7 @@ export default function DashboardPage() {
                 title="Analytics"
                 description="View insights and stats"
                 action="View"
-                onClick={() => {}}
+                onClick={() => router.push("/analytics")}
                 gradient="from-orange-500 to-red-500"
               />
             </div>
