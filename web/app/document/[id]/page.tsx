@@ -22,7 +22,7 @@ export default function DocumentPage() {
   const params = useParams();
   const documentId = parseInt(params.id as string);
 
-  const { user, checkAuth } = useAuthStore();
+  const { user, isInitialized } = useAuthStore();
   const { selectedDocument, selectDocument } = useDocumentsStore();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -35,7 +35,8 @@ export default function DocumentPage() {
   const [isLoadingContent, setIsLoadingContent] = useState(false);
 
   useEffect(() => {
-    checkAuth();
+    if (!isInitialized) return;
+    
     if (!user) {
       router.push("/login");
       return;
@@ -54,7 +55,7 @@ export default function DocumentPage() {
         setMessages(latest.messages);
       }
     });
-  }, [user, documentId, router]);
+  }, [user, isInitialized, documentId, router, selectedDocument, selectDocument]);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || !selectedDocument) return;

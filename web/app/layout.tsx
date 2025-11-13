@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthProvider } from "@/components/AuthProvider";
 
 export const metadata: Metadata = {
   title: "NoteMind AI - Your AI-Powered Research Companion",
@@ -14,7 +15,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className="antialiased font-sans bg-gray-900 text-white">
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

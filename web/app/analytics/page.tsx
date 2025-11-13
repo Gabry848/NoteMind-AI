@@ -62,7 +62,7 @@ interface ActivityData {
 
 export default function AnalyticsPage() {
   const router = useRouter();
-  const { user, checkAuth } = useAuthStore();
+  const { user, isInitialized } = useAuthStore();
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
   const [activity, setActivity] = useState<ActivityData[]>([]);
   const [activityDays, setActivityDays] = useState(7);
@@ -70,13 +70,12 @@ export default function AnalyticsPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    checkAuth();
-    if (!user) {
+    if (isInitialized && !user) {
       router.push("/login");
-    } else {
+    } else if (user) {
       loadAnalytics();
     }
-  }, [user, router, checkAuth]);
+  }, [user, isInitialized, router]);
 
   useEffect(() => {
     if (user) {

@@ -17,7 +17,7 @@ import type { Document, Folder } from "@/types";
 
 export default function DocumentsPage() {
   const router = useRouter();
-  const { user, logout, checkAuth } = useAuthStore();
+  const { user, logout, isInitialized } = useAuthStore();
   const { documents, fetchDocuments, uploadDocument, deleteDocument, selectDocument, isLoading } =
     useDocumentsStore();
   const [showUpload, setShowUpload] = useState(false);
@@ -33,14 +33,13 @@ export default function DocumentsPage() {
   const [draggedDoc, setDraggedDoc] = useState<Document | null>(null);
 
   useEffect(() => {
-    checkAuth();
-    if (!user) {
+    if (isInitialized && !user) {
       router.push("/login");
-    } else {
+    } else if (user) {
       fetchDocuments();
       loadFolders();
     }
-  }, [user, router]);
+  }, [user, isInitialized, router, fetchDocuments]);
 
   const loadFolders = async () => {
     try {

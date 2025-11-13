@@ -9,17 +9,19 @@ interface AuthState {
   user: User | null;
   token: string | null;
   isLoading: boolean;
+  isInitialized: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, fullName?: string) => Promise<void>;
   logout: () => void;
-  checkAuth: () => void;
+  checkAuth: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   token: null,
   isLoading: false,
+  isInitialized: false,
   error: null,
 
   login: async (email: string, password: string) => {
@@ -57,10 +59,20 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ user: null, token: null });
   },
 
-  checkAuth: () => {
+  checkAuth: async () => {
     const token = localStorage.getItem("token");
     if (token) {
-      set({ token });
+      set({ token, isLoading: true });
+      try {
+        const user = await authApi.getMe();
+        set({ user, isLoading: false, isInitialized: true });
+      } catch (error) {
+        // Token non valido, effettua logout
+        localStorage.removeItem("token");
+        set({ user: null, token: null, isLoading: false, isInitialized: true });
+      }
+    } else {
+      set({ isInitialized: true });
     }
   },
 }));

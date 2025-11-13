@@ -36,7 +36,7 @@ interface AnalyticsOverview {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, logout, checkAuth } = useAuthStore();
+  const { user, logout, isInitialized } = useAuthStore();
   const { documents, fetchDocuments, selectDocument, isLoading } = useDocumentsStore();
   const { shortcuts, showShortcutsHelpInDashboard } = useSettingsStore();
   const [showFABMenu, setShowFABMenu] = useState(false);
@@ -44,14 +44,13 @@ export default function DashboardPage() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsOverview | null>(null);
 
   useEffect(() => {
-    checkAuth();
-    if (!user) {
+    if (isInitialized && !user) {
       router.push("/login");
-    } else {
+    } else if (user) {
       fetchDocuments();
       fetchAnalyticsData();
     }
-  }, [user, router, checkAuth, fetchDocuments]);
+  }, [user, isInitialized, router, fetchDocuments]);
 
   const fetchAnalyticsData = async () => {
     try {

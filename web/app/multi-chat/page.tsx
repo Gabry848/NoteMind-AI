@@ -19,7 +19,7 @@ import type { Document, ChatMessage, Folder } from "@/types";
 
 export default function MultiChatPage() {
   const router = useRouter();
-  const { user, checkAuth } = useAuthStore();
+  const { user, isInitialized } = useAuthStore();
   const { documents, fetchDocuments } = useDocumentsStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
@@ -38,16 +38,15 @@ export default function MultiChatPage() {
 
   useEffect(() => {
     const initialize = async () => {
-      await checkAuth();
-      if (!user) {
+      if (isInitialized && !user) {
         router.push("/login");
-      } else {
+      } else if (user) {
         await fetchDocuments();
         await loadFolders();
       }
     };
     initialize();
-  }, [user, router, checkAuth, fetchDocuments]);
+  }, [user, isInitialized, router, fetchDocuments]);
 
   const loadFolders = async () => {
     try {
