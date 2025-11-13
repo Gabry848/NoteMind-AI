@@ -71,6 +71,7 @@ export default function DashboardPage() {
   const quickActions = [
     { icon: '💬', label: 'Multi Chat', action: () => router.push('/multi-chat'), shortcut: '⌘K' },
     { icon: '📁', label: 'Documents', action: () => router.push('/documents'), shortcut: '⌘D' },
+    { icon: '📝', label: 'Quiz', action: () => router.push('/quiz'), shortcut: '⌘Q' },
     { icon: '➕', label: 'Upload', action: () => router.push('/documents'), shortcut: '⌘U' },
   ];
 
@@ -284,12 +285,12 @@ export default function DashboardPage() {
                 gradient="from-purple-500 to-pink-500"
               />
               <ActionCard
-                icon="➕"
-                title="Upload Document"
-                description="Add new documents"
-                action="Upload"
-                onClick={() => router.push("/documents")}
-                gradient="from-green-500 to-emerald-500"
+                icon="📝"
+                title="Student Quiz"
+                description="Test your knowledge with AI quizzes"
+                action="Start Quiz"
+                onClick={() => router.push("/quiz")}
+                gradient="from-emerald-500 to-teal-500"
               />
               <ActionCard
                 icon="📊"
@@ -453,9 +454,9 @@ export default function DashboardPage() {
           </h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
             <ShortcutItem shortcut="⌘ K" description="Open Chat" />
+            <ShortcutItem shortcut="⌘ Q" description="Quiz" />
             <ShortcutItem shortcut="⌘ U" description="Upload File" />
             <ShortcutItem shortcut="⌘ D" description="Documents" />
-            <ShortcutItem shortcut="⌘ B" description="Toggle Sidebar" />
           </div>
         </motion.div>
       </div>

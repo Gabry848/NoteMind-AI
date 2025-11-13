@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import init_db
-from app.api import auth, documents, chat, summaries, folders, analytics
+from app.api import auth, documents, chat, summaries, folders, analytics, quiz
 
 
 @asynccontextmanager
@@ -43,6 +43,7 @@ app.include_router(folders.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
 app.include_router(summaries.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
+app.include_router(quiz.router, prefix="/api")
 
 
 @app.get("/")

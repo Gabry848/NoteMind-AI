@@ -182,4 +182,29 @@ export const analytics = {
   },
 };
 
+// Quiz API
+export const quiz = {
+  generate: async (config: {
+    document_ids: number[];
+    question_count: number;
+    question_type: 'multiple_choice' | 'open_ended' | 'mixed';
+    difficulty: 'easy' | 'medium' | 'hard';
+  }) => {
+    const response = await api.post("/quiz/generate", config);
+    return response.data;
+  },
+
+  submit: async (submission: {
+    quiz_id: string;
+    answers: { question_id: string; answer: string }[];
+  }) => {
+    const response = await api.post("/quiz/submit", submission);
+    return response.data;
+  },
+
+  delete: async (quizId: string): Promise<void> => {
+    await api.delete(`/quiz/${quizId}`);
+  },
+};
+
 export default api;
