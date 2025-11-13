@@ -30,7 +30,9 @@ export default function DocumentPage() {
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [summary, setSummary] = useState<SummaryResponse | null>(null);
-  const [activeTab, setActiveTab] = useState<"chat" | "summary">("chat");
+  const [activeTab, setActiveTab] = useState<"chat" | "summary" | "content">("chat");
+  const [fileContent, setFileContent] = useState<string | null>(null);
+  const [isLoadingContent, setIsLoadingContent] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -108,6 +110,20 @@ export default function DocumentPage() {
     }
   };
 
+  const handleLoadContent = async () => {
+    if (!selectedDocument || fileContent) return;
+
+    setIsLoadingContent(true);
+    try {
+      const result = await docsApi.getContent(documentId);
+      setFileContent(result.content);
+    } catch (error) {
+      console.error("Failed to load file content:", error);
+    } finally {
+      setIsLoadingContent(false);
+    }
+  };
+
   const handleNewChat = () => {
     setMessages([]);
     setConversationId(null);
@@ -170,6 +186,19 @@ export default function DocumentPage() {
             }`}
           >
             📊 Summary
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab("content");
+              if (!fileContent) handleLoadContent();
+            }}
+            className={`px-6 py-3 rounded-lg font-medium transition-all ${
+              activeTab === "content"
+                ? "bg-blue-600 text-white shadow-md"
+                : "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700"
+            }`}
+          >
+            📄 Content
           </button>
         </div>
 
@@ -248,7 +277,7 @@ export default function DocumentPage() {
               </div>
             </div>
           </div>
-        ) : (
+        ) : activeTab === "summary" ? (
           <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-md p-6">
             {summary ? (
               <div className="space-y-6">
@@ -299,6 +328,77 @@ export default function DocumentPage() {
                     </p>
                     <Button onClick={handleGenerateSummary} variant="primary">
                       Generate Summary
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-md p-6">
+            {fileContent ? (
+              <div className="prose prose-invert max-w-none">
+                {selectedDocument.file_type === "text/markdown" || 
+                 selectedDocument.original_filename.endsWith('.md') ? (
+                  <div className="markdown-content">
+                    <ReactMarkdown 
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeRaw]}
+                      components={{
+                        h1: ({node, ...props}) => <h1 className="text-4xl font-bold text-white mt-6 mb-4" {...props} />,
+                        h2: ({node, ...props}) => <h2 className="text-3xl font-bold text-white mt-5 mb-3" {...props} />,
+                        h3: ({node, ...props}) => <h3 className="text-2xl font-bold text-white mt-4 mb-2" {...props} />,
+                        h4: ({node, ...props}) => <h4 className="text-xl font-bold text-white mt-3 mb-2" {...props} />,
+                        h5: ({node, ...props}) => <h5 className="text-lg font-bold text-white mt-3 mb-2" {...props} />,
+                        h6: ({node, ...props}) => <h6 className="text-base font-bold text-white mt-2 mb-1" {...props} />,
+                        p: ({node, ...props}) => <p className="text-gray-300 my-3 leading-relaxed" {...props} />,
+                        ul: ({node, ...props}) => <ul className="list-disc list-inside space-y-2 my-4 text-gray-300" {...props} />,
+                        ol: ({node, ...props}) => <ol className="list-decimal list-inside space-y-2 my-4 text-gray-300" {...props} />,
+                        li: ({node, ...props}) => <li className="ml-4" {...props} />,
+                        code: ({node, inline, ...props}: any) => 
+                          inline ? 
+                            <code className="bg-gray-900 text-blue-400 px-2 py-1 rounded text-sm font-mono" {...props} /> :
+                            <code className="block bg-gray-900 text-gray-100 p-4 rounded-lg my-4 overflow-x-auto font-mono text-sm leading-relaxed" {...props} />,
+                        pre: ({node, ...props}) => <pre className="my-4 rounded-lg overflow-hidden" {...props} />,
+                        a: ({node, ...props}) => <a className="text-blue-400 hover:text-blue-300 underline" {...props} />,
+                        blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-blue-500 pl-4 italic my-4 text-gray-400" {...props} />,
+                        table: ({node, ...props}) => <div className="overflow-x-auto my-4"><table className="min-w-full border-collapse border border-gray-600" {...props} /></div>,
+                        thead: ({node, ...props}) => <thead className="bg-gray-700" {...props} />,
+                        th: ({node, ...props}) => <th className="border border-gray-600 px-4 py-2 text-left font-semibold text-white" {...props} />,
+                        td: ({node, ...props}) => <td className="border border-gray-600 px-4 py-2 text-gray-300" {...props} />,
+                        hr: ({node, ...props}) => <hr className="border-gray-600 my-6" {...props} />,
+                        strong: ({node, ...props}) => <strong className="font-bold text-white" {...props} />,
+                        em: ({node, ...props}) => <em className="italic text-gray-300" {...props} />,
+                        img: ({node, ...props}) => <img className="max-w-full h-auto rounded-lg my-4" {...props} />,
+                      }}
+                    >
+                      {fileContent}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <pre className="text-gray-300 whitespace-pre-wrap font-mono text-sm leading-relaxed">
+                    {fileContent}
+                  </pre>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                {isLoadingContent ? (
+                  <>
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-700 border-t-blue-500 mb-4"></div>
+                    <p className="text-gray-400">Loading file content...</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-6xl mb-4">📄</div>
+                    <h3 className="text-xl font-semibold text-white mb-2">
+                      File Content
+                    </h3>
+                    <p className="text-gray-400 mb-6">
+                      View the original content of your document
+                    </p>
+                    <Button onClick={handleLoadContent} variant="primary">
+                      Load Content
                     </Button>
                   </>
                 )}
