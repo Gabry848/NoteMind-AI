@@ -415,6 +415,16 @@ function DocumentCard({
   onDelete: (e: React.MouseEvent) => void;
   onDragStart: () => void;
 }) {
+  const [showContextMenu, setShowContextMenu] = useState(false);
+  const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenuPos({ x: e.clientX, y: e.clientY });
+    setShowContextMenu(true);
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "ready":
@@ -429,14 +439,16 @@ function DocumentCard({
   };
 
   return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      onClick={onClick}
-      draggable
-      onDragStart={onDragStart}
-      className="bg-gray-800 rounded-xl shadow-md p-6 cursor-pointer hover:shadow-xl transition-all duration-300 border border-gray-700"
-    >
+    <>
+      <motion.div
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={onClick}
+        onContextMenu={handleContextMenu}
+        draggable
+        onDragStart={onDragStart}
+        className="bg-gray-800 rounded-xl shadow-md p-6 cursor-pointer hover:shadow-xl transition-all duration-300 border border-gray-700"
+      >
       <div className="flex justify-between items-start mb-4">
         <div className="text-4xl">📄</div>
         <button
@@ -487,5 +499,77 @@ function DocumentCard({
         <p className="mt-2 text-xs text-red-400">{document.error_message}</p>
       )}
     </motion.div>
+
+    {/* Context Menu */}
+    {showContextMenu && (
+      <>
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setShowContextMenu(false)}
+        />
+        <div
+          className="fixed bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 min-w-[160px]"
+          style={{ left: `${contextMenuPos.x}px`, top: `${contextMenuPos.y}px` }}
+        >
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick();
+              setShowContextMenu(false);
+            }}
+            className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 transition-colors flex items-center gap-2"
+          >
+            <span>👁️</span>
+            <span>Apri</span>
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              navigator.clipboard.writeText(document.original_filename);
+              setShowContextMenu(false);
+            }}
+            className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 transition-colors flex items-center gap-2"
+          >
+            <span>📋</span>
+            <span>Copia nome</span>
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              window.open(`http://localhost:8000/api/documents/${document.id}/download`, '_blank');
+              setShowContextMenu(false);
+            }}
+            className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 transition-colors flex items-center gap-2"
+          >
+            <span>⬇️</span>
+            <span>Scarica</span>
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              navigator.clipboard.writeText(document.id.toString());
+              setShowContextMenu(false);
+            }}
+            className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 transition-colors flex items-center gap-2"
+          >
+            <span>🔗</span>
+            <span>Copia ID</span>
+          </button>
+          <div className="h-px bg-gray-700 my-1" />
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(e);
+              setShowContextMenu(false);
+            }}
+            className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-gray-700 transition-colors flex items-center gap-2"
+          >
+            <span>🗑️</span>
+            <span>Elimina</span>
+          </button>
+        </div>
+      </>
+    )}
+  </>
   );
 }

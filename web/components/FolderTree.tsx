@@ -239,17 +239,27 @@ function FolderItem({
   onDrop,
 }: FolderItemProps) {
   const [showMenu, setShowMenu] = useState(false);
+  const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenuPos({ x: e.clientX, y: e.clientY });
+    setShowMenu(true);
+  };
 
   return (
-    <div
-      className={`group flex items-center gap-1 px-3 py-2 hover:bg-gray-700 rounded transition-colors relative ${
-        isDropTarget ? "bg-blue-900/30 border-2 border-blue-500 border-dashed" : ""
-      }`}
-      style={{ paddingLeft: `${level * 20 + 12}px` }}
-      onDragOver={onDragOver}
-      onDragLeave={onDragLeave}
-      onDrop={onDrop}
-    >
+    <>
+      <div
+        className={`group flex items-center gap-1 px-3 py-2 hover:bg-gray-700 rounded transition-colors relative ${
+          isDropTarget ? "bg-blue-900/30 border-2 border-blue-500 border-dashed" : ""
+        }`}
+        style={{ paddingLeft: `${level * 20 + 12}px` }}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+        onContextMenu={handleContextMenu}
+      >
       {/* Expand/collapse arrow */}
       {hasChildren ? (
         <button
@@ -281,11 +291,12 @@ function FolderItem({
         )}
       </div>
 
-      {/* Context menu */}
+      {/* Context menu button */}
       <div className="relative">
         <button
           onClick={(e) => {
             e.stopPropagation();
+            setContextMenuPos({ x: e.clientX, y: e.clientY });
             setShowMenu(!showMenu);
           }}
           className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-white transition-opacity"
@@ -294,39 +305,69 @@ function FolderItem({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
           </svg>
         </button>
-
-        {showMenu && (
-          <>
-            <div
-              className="fixed inset-0 z-10"
-              onClick={() => setShowMenu(false)}
-            />
-            <div className="absolute right-0 top-full mt-1 w-36 bg-gray-800 border border-gray-700 rounded shadow-lg z-20">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit();
-                  setShowMenu(false);
-                }}
-                className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 transition-colors"
-              >
-                ✏️ Rename
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete();
-                  setShowMenu(false);
-                }}
-                className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-gray-700 transition-colors"
-              >
-                🗑️ Delete
-              </button>
-            </div>
-          </>
-        )}
       </div>
     </div>
+
+      {/* Context menu */}
+      {showMenu && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setShowMenu(false)}
+          />
+          <div 
+            className="fixed bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 min-w-[160px]"
+            style={{ left: `${contextMenuPos.x}px`, top: `${contextMenuPos.y}px` }}
+          >
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onClick();
+                setShowMenu(false);
+              }}
+              className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 transition-colors flex items-center gap-2"
+            >
+              <span>👁️</span>
+              <span>Apri</span>
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+                setShowMenu(false);
+              }}
+              className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 transition-colors flex items-center gap-2"
+            >
+              <span>✏️</span>
+              <span>Rinomina</span>
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                navigator.clipboard.writeText(folder.name);
+                setShowMenu(false);
+              }}
+              className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 transition-colors flex items-center gap-2"
+            >
+              <span>📋</span>
+              <span>Copia nome</span>
+            </button>
+            <div className="h-px bg-gray-700 my-1" />
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+                setShowMenu(false);
+              }}
+              className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-gray-700 transition-colors flex items-center gap-2"
+            >
+              <span>🗑️</span>
+              <span>Elimina</span>
+            </button>
+          </div>
+        </>
+      )}
+    </>
   );
 }
 
@@ -351,6 +392,16 @@ function DocumentItem({
   onDragStart,
   onDragEnd,
 }: DocumentItemProps) {
+  const [showContextMenu, setShowContextMenu] = useState(false);
+  const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenuPos({ x: e.clientX, y: e.clientY });
+    setShowContextMenu(true);
+  };
+
   const getFileIcon = (fileType: string) => {
     if (fileType.includes("pdf")) return "📕";
     if (fileType.includes("doc")) return "📘";
@@ -360,16 +411,18 @@ function DocumentItem({
   };
 
   return (
-    <div
-      draggable={!showCheckbox}
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
-      className={`
-        group flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors
-        ${isSelected ? "bg-blue-600 text-white" : "hover:bg-gray-700 text-gray-300"}
-      `}
-      style={{ paddingLeft: `${level * 20 + 32}px` }}
-    >
+    <>
+      <div
+        draggable={!showCheckbox}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+        onContextMenu={handleContextMenu}
+        className={`
+          group flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors
+          ${isSelected ? "bg-blue-600 text-white" : "hover:bg-gray-700 text-gray-300"}
+        `}
+        style={{ paddingLeft: `${level * 20 + 32}px` }}
+      >
       {showCheckbox && (
         <input
           type="checkbox"
@@ -397,5 +450,68 @@ function DocumentItem({
         <span className="text-xs opacity-0 group-hover:opacity-100">💬</span>
       )}
     </div>
+
+    {/* Context Menu */}
+    {showContextMenu && (
+      <>
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setShowContextMenu(false)}
+        />
+        <div
+          className="fixed bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 min-w-[160px]"
+          style={{ left: `${contextMenuPos.x}px`, top: `${contextMenuPos.y}px` }}
+        >
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick();
+              setShowContextMenu(false);
+            }}
+            className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 transition-colors flex items-center gap-2"
+          >
+            <span>👁️</span>
+            <span>Apri</span>
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              navigator.clipboard.writeText(document.original_filename);
+              setShowContextMenu(false);
+            }}
+            className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 transition-colors flex items-center gap-2"
+          >
+            <span>📋</span>
+            <span>Copia nome</span>
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              window.open(`http://localhost:8000/api/documents/${document.id}/download`, '_blank');
+              setShowContextMenu(false);
+            }}
+            className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 transition-colors flex items-center gap-2"
+          >
+            <span>⬇️</span>
+            <span>Scarica</span>
+          </button>
+          <div className="h-px bg-gray-700 my-1" />
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (confirm(`Eliminare "${document.original_filename}"?`)) {
+                // Handle delete
+              }
+              setShowContextMenu(false);
+            }}
+            className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-gray-700 transition-colors flex items-center gap-2"
+          >
+            <span>🗑️</span>
+            <span>Elimina</span>
+          </button>
+        </div>
+      </>
+    )}
+  </>
   );
 }
