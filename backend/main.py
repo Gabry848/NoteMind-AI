@@ -2,17 +2,29 @@
 NoteMind AI - FastAPI Backend
 Main application entry point
 """
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import init_db
 from app.api import auth, documents, chat, summaries
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan events"""
+    # Startup
+    init_db()
+    yield
+    # Shutdown (if needed)
+
+
 # Create FastAPI app
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
     description="AI-powered notebook for document analysis and chat",
+    lifespan=lifespan,
 )
 
 # Configure CORS
@@ -29,12 +41,6 @@ app.include_router(auth.router, prefix="/api")
 app.include_router(documents.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
 app.include_router(summaries.router, prefix="/api")
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize database on startup"""
-    init_db()
 
 
 @app.get("/")

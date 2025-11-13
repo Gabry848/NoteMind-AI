@@ -3,6 +3,13 @@ Configuration management for NoteMind AI
 """
 from pydantic_settings import BaseSettings
 from typing import List
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load .env file from project root
+env_path = Path(__file__).parent.parent.parent.parent / ".env"
+load_dotenv(dotenv_path=env_path)
 
 
 class Settings(BaseSettings):
@@ -23,7 +30,7 @@ class Settings(BaseSettings):
 
     # Gemini API
     GEMINI_API_KEY: str
-    GEMINI_MODEL: str = "gemini-1.5-flash"
+    GEMINI_MODEL: str = "gemini-2.5-flash"
 
     # CORS
     FRONTEND_URL: str = "http://localhost:3000"

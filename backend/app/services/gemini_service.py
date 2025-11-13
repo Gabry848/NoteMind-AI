@@ -2,11 +2,10 @@
 Gemini AI service for file search and RAG
 """
 import os
+import time
 from typing import List, Dict, Optional, Tuple
 import google.generativeai as genai
 from app.core.config import settings
-
-
 class GeminiService:
     """Service for interacting with Google Gemini API"""
 
@@ -28,6 +27,17 @@ class GeminiService:
         """
         try:
             file = genai.upload_file(path=file_path, display_name=display_name)
+            
+            # Wait for file to be processed
+            print(f"Waiting for file {file.name} to be processed...")
+            while file.state.name == "PROCESSING":
+                time.sleep(2)
+                file = genai.get_file(name=file.name)
+            
+            if file.state.name == "FAILED":
+                raise Exception(f"File processing failed: {file.state}")
+            
+            print(f"File {file.name} is ready")
             return file.name
         except Exception as e:
             raise Exception(f"Failed to upload file to Gemini: {str(e)}")
@@ -89,30 +99,30 @@ class GeminiService:
             Tuple of (response text, citations)
         """
         try:
+            # Get the file
+            file = genai.get_file(name=file_id)
+            
             # Build the prompt with context
-            prompt_parts = []
-
-            # Add system instruction
-            prompt_parts.append(
+            system_instruction = (
                 "You are a helpful AI assistant that answers questions based on the provided document. "
                 "Always cite specific parts of the document when answering. "
                 "If the answer is not in the document, say so clearly."
             )
-
+            
+            # Build conversation context
+            context_parts = [system_instruction]
+            
             # Add conversation history
             if conversation_history:
                 for msg in conversation_history[-5:]:  # Last 5 messages for context
-                    prompt_parts.append(f"{msg['role']}: {msg['content']}")
-
-            # Add current query
-            prompt_parts.append(f"user: {query}")
-
-            # Get the file
-            file = genai.get_file(name=file_id)
-
+                    context_parts.append(f"{msg['role']}: {msg['content']}")
+            
+            # Combine context with query
+            full_prompt = "\n\n".join(context_parts) + f"\n\nuser: {query}\n\nassistant:"
+            
             # Generate response with file context
             response = self.model.generate_content(
-                ["\n\n".join(prompt_parts), file],
+                [full_prompt, file],
                 generation_config=genai.GenerationConfig(
                     temperature=0.7,
                     top_p=0.95,
@@ -127,6 +137,9 @@ class GeminiService:
             return response.text, citations
 
         except Exception as e:
+            print(f"Error in chat_with_document: {str(e)}")
+            import traceback
+            traceback.print_exc()
             raise Exception(f"Failed to chat with document: {str(e)}")
 
     async def generate_summary(self, file_id: str, summary_type: str = "medium") -> str:
@@ -175,6 +188,9 @@ Provide a clear, well-structured summary."""
             return response.text
 
         except Exception as e:
+            print(f"Error in generate_summary: {str(e)}")
+            import traceback
+            traceback.print_exc()
             raise Exception(f"Failed to generate summary: {str(e)}")
 
     async def extract_key_topics(self, file_id: str) -> List[str]:

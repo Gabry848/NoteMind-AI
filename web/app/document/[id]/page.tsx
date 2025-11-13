@@ -6,6 +6,9 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { motion } from "framer-motion";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useDocumentsStore } from "@/store/useDocumentsStore";
 import { chat as chatApi, summaries as summariesApi, documents as docsApi } from "@/lib/api";
@@ -307,7 +310,18 @@ function ChatBubble({ message }: { message: ChatMessage }) {
             : "bg-gray-100 text-gray-900"
         }`}
       >
-        <p className="whitespace-pre-wrap">{message.content}</p>
+        {isUser ? (
+          <p className="whitespace-pre-wrap">{message.content}</p>
+        ) : (
+          <div className="prose prose-sm max-w-none prose-headings:mt-3 prose-headings:mb-2 prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-1 prose-code:bg-gray-200 prose-code:px-1 prose-code:rounded prose-pre:bg-gray-800 prose-pre:text-white prose-a:text-blue-600">
+            <ReactMarkdown 
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeRaw]}
+            >
+              {message.content}
+            </ReactMarkdown>
+          </div>
+        )}
         {message.citations && message.citations.length > 0 && (
           <div className="mt-2 pt-2 border-t border-gray-300">
             <p className="text-xs opacity-75">Citations:</p>
