@@ -324,6 +324,7 @@ Return only the topics as a comma-separated list, nothing else."""
         question_count: int = 5,
         question_type: str = "mixed",
         difficulty: str = "medium",
+        language: str = "it",
     ) -> Dict:
         """
         Generate a quiz based on document(s) content
@@ -333,6 +334,7 @@ Return only the topics as a comma-separated list, nothing else."""
             question_count: Number of questions to generate
             question_type: Type of questions (multiple_choice, open_ended, mixed)
             difficulty: Difficulty level (easy, medium, hard)
+            language: Language for questions (it, en, es, fr, de, etc.)
 
         Returns:
             Dictionary containing quiz data with questions
@@ -340,6 +342,22 @@ Return only the topics as a comma-separated list, nothing else."""
         try:
             # Get all files
             files = [genai.get_file(name=file_id) for file_id in file_ids]
+            
+            # Language instructions
+            language_names = {
+                "it": "Italian",
+                "en": "English",
+                "es": "Spanish",
+                "fr": "French",
+                "de": "German",
+                "pt": "Portuguese",
+                "ru": "Russian",
+                "zh": "Chinese",
+                "ja": "Japanese",
+                "ko": "Korean",
+            }
+            language_name = language_names.get(language, "Italian")
+            language_instruction = f"Generate all questions and answers in {language_name}."
             
             # Define difficulty instructions
             difficulty_instructions = {
@@ -362,6 +380,7 @@ Return only the topics as a comma-separated list, nothing else."""
             
             prompt = f"""Based on the provided document(s), generate a quiz to test understanding of the material.
 
+{language_instruction}
 {difficulty_instruction}
 {type_instruction}
 
@@ -370,6 +389,7 @@ Requirements:
 2. Cover different topics from the document(s)
 3. For multiple choice questions, include exactly 4 options where only one is correct
 4. For open-ended questions, provide questions that require substantive answers
+5. ALL text (questions, options, answers) must be in {language_name}
 
 Return your response in JSON format with the following structure:
 {{

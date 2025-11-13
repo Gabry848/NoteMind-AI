@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useAuthStore } from "@/store/useAuthStore";
-import { analytics } from "@/lib/api";
+import { analytics, quiz } from "@/lib/api";
 import { Button } from "@/components/Button";
 
 interface AnalyticsOverview {
@@ -41,6 +41,18 @@ interface AnalyticsOverview {
   }>;
 }
 
+interface QuizResultSummary {
+  id: number;
+  quiz_id: string;
+  question_count: number;
+  question_type: string;
+  difficulty: string;
+  total_questions: number;
+  correct_answers: number;
+  score_percentage: number;
+  completed_at: string;
+}
+
 interface ActivityData {
   date: string;
   documents: number;
@@ -54,6 +66,7 @@ export default function AnalyticsPage() {
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
   const [activity, setActivity] = useState<ActivityData[]>([]);
   const [activityDays, setActivityDays] = useState(7);
+  const [quizResults, setQuizResults] = useState<QuizResultSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -74,12 +87,14 @@ export default function AnalyticsPage() {
   const loadAnalytics = async () => {
     try {
       setIsLoading(true);
-      const [overviewData, activityData] = await Promise.all([
+      const [overviewData, activityData, quizResultsData] = await Promise.all([
         analytics.getOverview(),
         analytics.getActivity(activityDays),
+        quiz.getResults(),
       ]);
       setOverview(overviewData);
       setActivity(activityData);
+      setQuizResults(quizResultsData);
     } catch (error) {
       console.error("Failed to load analytics:", error);
     } finally {
@@ -435,6 +450,99 @@ export default function AnalyticsPage() {
             />
           </div>
         </div>
+
+        {/* Quiz Results Section */}
+        {quizResults.length > 0 && (
+          <div className="mb-8">
+            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <span>🧠</span> Quiz Performance
+            </h3>
+            <div className="bg-gray-800/60 backdrop-blur-sm rounded-xl border border-gray-700/50 p-6">
+              <div className="space-y-4">
+                {quizResults.slice(0, 10).map((result, i) => {
+                  const scoreColor = 
+                    result.score_percentage >= 80 ? "text-green-400" :
+                    result.score_percentage >= 60 ? "text-yellow-400" :
+                    "text-red-400";
+                  
+                  const difficultyEmoji = 
+                    result.difficulty === "easy" ? "🟢" :
+                    result.difficulty === "medium" ? "🟡" :
+                    "🔴";
+
+                  return (
+                    <motion.div
+                      key={result.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      className="flex items-center justify-between p-4 bg-gray-700/30 rounded-lg hover:bg-gray-700/50 transition-colors cursor-pointer"
+                      onClick={() => router.push(`/quiz?result=${result.id}`)}
+                    >
+                      <div className="flex items-center gap-4 flex-1">
+                        <span className="text-2xl">{difficultyEmoji}</span>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-white font-medium">
+                              Quiz #{result.id}
+                            </span>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-700 text-gray-300">
+                              {result.difficulty}
+                            </span>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-700 text-gray-300">
+                              {result.question_count} domande
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-400">
+                            Completato il {new Date(result.completed_at).toLocaleDateString("it-IT", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <div className={`text-2xl font-bold ${scoreColor}`}>
+                            {Math.round(result.score_percentage)}%
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {result.correct_answers}/{result.total_questions}
+                          </div>
+                        </div>
+                        <svg
+                          className="w-5 h-5 text-gray-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+              {quizResults.length > 10 && (
+                <div className="mt-4 text-center">
+                  <Button
+                    variant="ghost"
+                    onClick={() => router.push("/quiz")}
+                    className="text-blue-400 hover:text-blue-300"
+                  >
+                    Vedi tutti i {quizResults.length} quiz →
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Quick Actions */}
         <div className="bg-gradient-to-br from-gray-800/50 to-gray-800/30 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-8 text-center">

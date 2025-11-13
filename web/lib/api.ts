@@ -56,6 +56,11 @@ export const auth = {
     const response = await api.get("/auth/me");
     return response.data;
   },
+
+  updateProfile: async (data: { full_name?: string; preferred_language?: string }) => {
+    const response = await api.put("/auth/me", data);
+    return response.data;
+  },
 };
 
 // Documents API
@@ -189,6 +194,7 @@ export const quiz = {
     question_count: number;
     question_type: 'multiple_choice' | 'open_ended' | 'mixed';
     difficulty: 'easy' | 'medium' | 'hard';
+    language?: string;
   }) => {
     const response = await api.post("/quiz/generate", config);
     return response.data;
@@ -204,6 +210,48 @@ export const quiz = {
 
   delete: async (quizId: string): Promise<void> => {
     await api.delete(`/quiz/${quizId}`);
+  },
+
+  getResults: async (limit?: number, offset?: number) => {
+    const params = new URLSearchParams();
+    if (limit) params.append('limit', limit.toString());
+    if (offset) params.append('offset', offset.toString());
+    const response = await api.get(`/quiz/results?${params}`);
+    return response.data;
+  },
+
+  getResultDetail: async (resultId: number) => {
+    const response = await api.get(`/quiz/results/${resultId}`);
+    return response.data;
+  },
+
+  downloadQuestions: async (quizId: string) => {
+    const response = await api.get(`/quiz/download/${quizId}`);
+    return response.data;
+  },
+
+  share: async (shareRequest: {
+    quiz_id: string;
+    title?: string;
+    description?: string;
+    expires_in_days?: number;
+  }) => {
+    const response = await api.post("/quiz/share", shareRequest);
+    return response.data;
+  },
+
+  getShared: async (shareToken: string) => {
+    const response = await api.get(`/quiz/shared/${shareToken}`);
+    return response.data;
+  },
+
+  submitShared: async (shareToken: string, answers: { question_id: string; answer: string }[]) => {
+    const response = await api.post(`/quiz/shared/${shareToken}/submit`, { answers });
+    return response.data;
+  },
+
+  deleteShared: async (shareToken: string): Promise<void> => {
+    await api.delete(`/quiz/shared/${shareToken}`);
   },
 };
 

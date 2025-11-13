@@ -33,6 +33,10 @@ class QuizCreateRequest(BaseModel):
         default="medium",
         description="Difficulty level of the quiz"
     )
+    language: Optional[str] = Field(
+        default=None,
+        description="Language for quiz questions (it, en, es, fr, de, etc.). If not provided, user's preferred language is used"
+    )
 
 
 class QuizResponse(BaseModel):
@@ -78,3 +82,49 @@ class QuizCorrectionResponse(BaseModel):
     corrections: List[QuestionCorrection]
     overall_feedback: str
     created_at: datetime
+
+
+class QuizResultResponse(BaseModel):
+    """Schema for quiz result summary"""
+    id: int
+    quiz_id: str
+    question_count: int
+    question_type: str
+    difficulty: str
+    total_questions: int
+    correct_answers: int
+    score_percentage: float
+    overall_feedback: Optional[str]
+    document_ids: List[int]
+    completed_at: datetime
+    created_at: datetime
+
+
+class SharedQuizCreate(BaseModel):
+    """Schema for creating a shared quiz"""
+    quiz_id: str
+    title: Optional[str] = None
+    description: Optional[str] = None
+    expires_in_days: Optional[int] = Field(None, ge=1, le=365, description="Number of days until expiration")
+
+
+class SharedQuizResponse(BaseModel):
+    """Schema for shared quiz response"""
+    id: int
+    share_token: str
+    quiz_id: str
+    title: Optional[str]
+    description: Optional[str]
+    question_count: int
+    question_type: str
+    difficulty: str
+    view_count: int
+    completion_count: int
+    is_active: bool
+    expires_at: Optional[datetime]
+    created_at: datetime
+
+
+class SharedQuizSubmission(BaseModel):
+    """Schema for shared quiz submission (no quiz_id needed, it's in the URL)"""
+    answers: List[UserAnswer]

@@ -27,10 +27,18 @@ class UserResponse(BaseModel):
     id: int
     email: str
     full_name: Optional[str]
+    preferred_language: str
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class UserUpdate(BaseModel):
+    """Schema for user profile update"""
+
+    full_name: Optional[str] = None
+    preferred_language: Optional[str] = None
 
 
 class TokenResponse(BaseModel):

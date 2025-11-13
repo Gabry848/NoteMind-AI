@@ -145,6 +145,8 @@ export default function QuizPage() {
   const [resultsData, setResultsData] = useState<QuizResultsData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [shareToken, setShareToken] = useState<string | null>(null);
+  const [showShareDialog, setShowShareDialog] = useState(false);
 
   const stageIndex = STAGE_FLOW.findIndex((step) => step.id === stage);
   const stageMeta = STAGE_META[stage];
@@ -231,6 +233,55 @@ export default function QuizPage() {
     setStage('quiz');
     setResultsData(null);
     setError(null);
+  };
+
+  const handleShareQuiz = async () => {
+    if (!quizData) return;
+
+    try {
+      const shareData = await quizApi.share({
+        quiz_id: quizData.quiz_id,
+        title: `Quiz - ${quizData.question_count} domande`,
+        description: `Difficoltà: ${quizData.difficulty}`,
+        expires_in_days: 30,
+      });
+
+      setShareToken(shareData.share_token);
+      setShowShareDialog(true);
+    } catch (error) {
+      console.error('Error sharing quiz:', error);
+      setError('Errore durante la condivisione del quiz');
+    }
+  };
+
+  const handleDownloadQuiz = async () => {
+    if (!quizData) return;
+
+    try {
+      const data = await quizApi.downloadQuestions(quizData.quiz_id);
+      
+      // Create a blob and download
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `quiz_${quizData.quiz_id}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading quiz:', error);
+      setError('Errore durante il download delle domande');
+    }
+  };
+
+  const copyShareLink = () => {
+    if (!shareToken) return;
+    
+    const shareUrl = `${window.location.origin}/shared-quiz?token=${shareToken}`;
+    navigator.clipboard.writeText(shareUrl);
+    alert('Link copiato negli appunti!');
   };
 
   return (
@@ -354,8 +405,11 @@ export default function QuizPage() {
                     scorePercentage={resultsData.score_percentage}
                     corrections={resultsData.corrections}
                     overallFeedback={resultsData.overall_feedback}
+                    quizId={quizData?.quiz_id}
                     onRetry={handleRetry}
                     onNewQuiz={handleNewQuiz}
+                    onShare={handleShareQuiz}
+                    onDownload={handleDownloadQuiz}
                   />
                 )}
               </div>
@@ -415,6 +469,54 @@ export default function QuizPage() {
           </aside>
         </main>
       </div>
+
+      {/* Share Dialog */}
+      {showShareDialog && shareToken && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="flex items-start justify-between mb-4">
+              <h3 className="text-xl font-bold text-white">Condividi Quiz</h3>
+              <button
+                onClick={() => setShowShareDialog(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <p className="text-gray-300 mb-4">
+              Copia questo link per condividere il quiz con altre persone. Non è richiesta l'autenticazione.
+            </p>
+
+            <div className="bg-gray-900 border border-gray-700 rounded-lg p-3 mb-4 break-all">
+              <code className="text-sm text-blue-300">
+                {`${window.location.origin}/shared-quiz?token=${shareToken}`}
+              </code>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                onClick={copyShareLink}
+                variant="primary"
+                className="flex-1"
+              >
+                <svg className="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Copia Link
+              </Button>
+              <Button
+                onClick={() => setShowShareDialog(false)}
+                variant="secondary"
+              >
+                Chiudi
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

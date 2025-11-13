@@ -6,6 +6,7 @@ export interface User {
   id: number;
   email: string;
   full_name?: string;
+  preferred_language: string;
   created_at: string;
 }
 

@@ -3,16 +3,22 @@
  */
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Card } from "@/components/Card";
 import { Button } from "@/components/Button";
 import { ShortcutInput } from "@/components/ShortcutInput";
 import { useSettingsStore, prettyShortcut } from "@/store/useSettingsStore";
+import { useAuthStore } from "@/store/useAuthStore";
+import { auth } from "@/lib/api";
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { user } = useAuthStore();
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState("");
+  
   const {
     assistantLanguage,
     shortcuts,
@@ -25,14 +31,40 @@ export default function SettingsPage() {
 
   const languages = useMemo(
     () => [
-      { value: "it", label: "Italiano" },
-      { value: "en", label: "English" },
-      { value: "es", label: "Español" },
-      { value: "fr", label: "Français" },
-      { value: "de", label: "Deutsch" },
+      { value: "it", label: "Italiano 🇮🇹" },
+      { value: "en", label: "English 🇬🇧" },
+      { value: "es", label: "Español 🇪🇸" },
+      { value: "fr", label: "Français 🇫🇷" },
+      { value: "de", label: "Deutsch 🇩🇪" },
+      { value: "pt", label: "Português 🇵🇹" },
+      { value: "ru", label: "Русский 🇷🇺" },
+      { value: "zh", label: "中文 🇨🇳" },
+      { value: "ja", label: "日本語 🇯🇵" },
+      { value: "ko", label: "한국어 🇰🇷" },
     ],
     []
   );
+
+  const handleLanguageChange = async (newLanguage: string) => {
+    setAssistantLanguage(newLanguage as any);
+    
+    // Save to server if user is logged in
+    if (user) {
+      setIsSaving(true);
+      setSaveMessage("");
+      try {
+        await auth.updateProfile({ preferred_language: newLanguage });
+        setSaveMessage("✓ Lingua salvata");
+        setTimeout(() => setSaveMessage(""), 2000);
+      } catch (error) {
+        console.error("Error saving language:", error);
+        setSaveMessage("✗ Errore salvataggio");
+        setTimeout(() => setSaveMessage(""), 3000);
+      } finally {
+        setIsSaving(false);
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
@@ -58,13 +90,14 @@ export default function SettingsPage() {
         <Card className="bg-gray-800/60">
           <h2 className="text-xl font-semibold mb-2">Lingua dell'assistente IA</h2>
           <p className="text-gray-400 text-sm mb-4">
-            Scegli la lingua preferita per le risposte dell'assistente.
+            Scegli la lingua preferita per le risposte dell'assistente e i quiz.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
             <select
-              className="px-4 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
               value={assistantLanguage}
-              onChange={(e) => setAssistantLanguage(e.target.value as any)}
+              onChange={(e) => handleLanguageChange(e.target.value)}
+              disabled={isSaving}
             >
               {languages.map((l) => (
                 <option key={l.value} value={l.value}>
@@ -73,7 +106,13 @@ export default function SettingsPage() {
               ))}
             </select>
             <div className="text-xs text-gray-500">
-              Attuale: <span className="font-mono">{assistantLanguage}</span>
+              {saveMessage ? (
+                <span className={saveMessage.includes("✓") ? "text-green-400" : "text-red-400"}>
+                  {saveMessage}
+                </span>
+              ) : (
+                <>Attuale: <span className="font-mono">{assistantLanguage}</span></>
+              )}
             </div>
           </div>
         </Card>

@@ -20,8 +20,11 @@ interface QuizResultsProps {
   scorePercentage: number;
   corrections: QuestionCorrection[];
   overallFeedback: string;
+  quizId?: string;
   onRetry?: () => void;
   onNewQuiz?: () => void;
+  onShare?: () => void;
+  onDownload?: () => void;
 }
 
 export const QuizResults: React.FC<QuizResultsProps> = ({
@@ -30,8 +33,11 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
   scorePercentage,
   corrections,
   overallFeedback,
+  quizId,
   onRetry,
   onNewQuiz,
+  onShare,
+  onDownload,
 }) => {
   const getScoreTheme = (percentage: number) => {
     if (percentage >= 90) {
@@ -200,27 +206,62 @@ export const QuizResults: React.FC<QuizResultsProps> = ({
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-4 justify-center pt-4">
-        {onRetry && (
-          <Button
-            onClick={onRetry}
-            variant="secondary"
-            size="lg"
-            className="rounded-xl border border-white/10 bg-white/5 px-6 py-3 font-semibold text-gray-100 hover:border-blue-400/40 hover:bg-blue-500/10"
-          >
-            Riprova Quiz
-          </Button>
+      <div className="space-y-4 pt-4">
+        {/* Share and Download */}
+        {(onShare || onDownload) && (
+          <div className="flex gap-3 justify-center flex-wrap">
+            {onShare && (
+              <Button
+                onClick={onShare}
+                variant="secondary"
+                size="md"
+                className="rounded-xl border border-purple-400/40 bg-purple-500/10 px-5 py-2.5 font-semibold text-purple-200 hover:border-purple-400/60 hover:bg-purple-500/20"
+              >
+                <svg className="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+                Condividi Quiz
+              </Button>
+            )}
+            {onDownload && (
+              <Button
+                onClick={onDownload}
+                variant="secondary"
+                size="md"
+                className="rounded-xl border border-green-400/40 bg-green-500/10 px-5 py-2.5 font-semibold text-green-200 hover:border-green-400/60 hover:bg-green-500/20"
+              >
+                <svg className="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Scarica Domande
+              </Button>
+            )}
+          </div>
         )}
-        {onNewQuiz && (
-          <Button
-            onClick={onNewQuiz}
-            variant="primary"
-            size="lg"
-            className="rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 px-6 py-3 font-semibold shadow-lg shadow-blue-900/40 hover:from-blue-400 hover:to-indigo-400"
-          >
-            Nuovo Quiz
-          </Button>
-        )}
+
+        {/* Main Actions */}
+        <div className="flex gap-4 justify-center">
+          {onRetry && (
+            <Button
+              onClick={onRetry}
+              variant="secondary"
+              size="lg"
+              className="rounded-xl border border-white/10 bg-white/5 px-6 py-3 font-semibold text-gray-100 hover:border-blue-400/40 hover:bg-blue-500/10"
+            >
+              Riprova Quiz
+            </Button>
+          )}
+          {onNewQuiz && (
+            <Button
+              onClick={onNewQuiz}
+              variant="primary"
+              size="lg"
+              className="rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 px-6 py-3 font-semibold shadow-lg shadow-blue-900/40 hover:from-blue-400 hover:to-indigo-400"
+            >
+              Nuovo Quiz
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
