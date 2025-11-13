@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     # Upload
     UPLOAD_DIR: str = "./uploads"
     MAX_UPLOAD_SIZE: int = 10485760  # 10MB
-    ALLOWED_EXTENSIONS: List[str] = [".pdf", ".txt", ".docx", ".json", ".md", ".py", ".js", ".ts"]
+    ALLOWED_EXTENSIONS: List[str] = [".pdf", ".txt", ".docx", ".json", ".md", ".py", ".js", ".ts", ".jpg", ".jpeg", ".png", ".webp"]
 
     class Config:
         env_file = ".env"

@@ -4,6 +4,7 @@ Document management API endpoints
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from pathlib import Path
 from app.core.database import get_db
 from app.models.user import User
 from app.models.document import Document
@@ -11,6 +12,7 @@ from app.models.folder import Folder
 from app.utils.dependencies import get_current_user
 from app.utils.file_handler import FileHandler
 from app.services.gemini_service import gemini_service
+from app.services.ocr_service import ocr_service
 from app.schemas.document import DocumentResponse, DocumentListResponse, DocumentUpdate
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
@@ -52,7 +54,7 @@ async def upload_document(
     if not FileHandler.is_allowed_file(file.filename):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"File type not allowed. Allowed types: {', '.join(FileHandler.get_file_extension(f) for f in ['.pdf', '.txt', '.docx', '.json', '.md'])}",
+            detail=f"File type not allowed. Allowed types: {', '.join(FileHandler.get_file_extension(f) for f in ['.pdf', '.txt', '.docx', '.json', '.md', '.jpg', '.jpeg', '.png', '.webp'])}",
         )
 
     # Check file size
@@ -64,19 +66,58 @@ async def upload_document(
             detail="File size exceeds 10MB limit",
         )
 
+    # Check if file is an image
+    file_ext = FileHandler.get_file_extension(file.filename)
+    is_image = file_ext in ['.jpg', '.jpeg', '.png', '.webp']
+
     try:
         # Save file to disk
         file_path, unique_filename = await FileHandler.save_upload_file(file)
+
+        # Process image with OCR if it's an image
+        if is_image:
+            try:
+                print(f"Processing image {file.filename} with OCR...")
+                
+                # Extract text, correct, format and get title
+                markdown_content, doc_title = await ocr_service.process_image_to_document(file_path)
+                
+                # Save markdown content to a new file
+                md_filename = f"{doc_title}.md"
+                md_path = Path(file_path).parent / f"{Path(unique_filename).stem}.md"
+                
+                with open(md_path, 'w', encoding='utf-8') as f:
+                    f.write(markdown_content)
+                
+                # Delete the original image file
+                FileHandler.delete_file(file_path)
+                
+                # Update file info to point to markdown file
+                file_path = str(md_path)
+                unique_filename = md_path.name
+                original_filename = md_filename
+                
+                print(f"Image processed successfully: {md_filename}")
+                
+            except Exception as e:
+                # If OCR fails, delete the uploaded file and raise error
+                FileHandler.delete_file(file_path)
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Failed to process image: {str(e)}",
+                )
+        else:
+            original_filename = file.filename
 
         # Create document record
         document = Document(
             user_id=current_user.id,
             folder_id=folder_id,
             filename=unique_filename,
-            original_filename=file.filename,
+            original_filename=original_filename,
             file_path=file_path,
             file_size=FileHandler.get_file_size(file_path),
-            file_type=FileHandler.get_file_extension(file.filename),
+            file_type=FileHandler.get_file_extension(unique_filename),
             status="processing",
         )
 

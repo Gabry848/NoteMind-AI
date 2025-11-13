@@ -10,13 +10,19 @@ interface FileUploadProps {
   onFileSelect: (file: File) => void;
   accept?: string;
   maxSize?: number;
+  acceptImages?: boolean;
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({
   onFileSelect,
   accept = ".pdf,.txt,.docx,.json,.md,.py,.js,.ts",
   maxSize = 10 * 1024 * 1024, // 10MB
+  acceptImages = false,
 }) => {
+  // If acceptImages is true, add image formats to accept list
+  const effectiveAccept = acceptImages 
+    ? `${accept},.jpg,.jpeg,.png,.webp`
+    : accept;
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       if (acceptedFiles.length > 0) {
@@ -28,7 +34,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
   const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
     onDrop,
-    accept: accept.split(",").reduce((acc, ext) => ({ ...acc, [ext.trim()]: [] }), {}),
+    accept: effectiveAccept.split(",").reduce((acc, ext) => ({ ...acc, [ext.trim()]: [] }), {}),
     maxSize,
     multiple: false,
   });
@@ -72,7 +78,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               and drop
             </p>
             <p className="text-sm text-gray-500">
-              PDF, TXT, DOCX, JSON, MD (max 10MB)
+              {acceptImages 
+                ? "PDF, TXT, DOCX, MD, JPG, PNG (max 10MB)" 
+                : "PDF, TXT, DOCX, JSON, MD (max 10MB)"}
             </p>
           </>
         )}
