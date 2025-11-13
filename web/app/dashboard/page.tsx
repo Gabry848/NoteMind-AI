@@ -13,6 +13,27 @@ import { Button } from "@/components/Button";
 import { useSettingsStore, isEventMatchingShortcut, prettyShortcut } from "@/store/useSettingsStore";
 import type { Document } from "@/types";
 
+interface AnalyticsOverview {
+  documents: {
+    total: number;
+    ready: number;
+    processing: number;
+    total_storage_bytes: number;
+    total_storage_mb: number;
+    recent_uploads: number;
+  };
+  conversations: {
+    total: number;
+    recent: number;
+  };
+  messages: {
+    total: number;
+    user_messages: number;
+    ai_messages: number;
+    recent: number;
+  };
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const { user, logout, checkAuth } = useAuthStore();
@@ -20,6 +41,7 @@ export default function DashboardPage() {
   const { shortcuts, showShortcutsHelpInDashboard } = useSettingsStore();
   const [showFABMenu, setShowFABMenu] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsOverview | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -27,8 +49,19 @@ export default function DashboardPage() {
       router.push("/login");
     } else {
       fetchDocuments();
+      fetchAnalyticsData();
     }
   }, [user, router, checkAuth, fetchDocuments]);
+
+  const fetchAnalyticsData = async () => {
+    try {
+      const { analytics } = await import("@/lib/api");
+      const data = await analytics.getOverview();
+      setAnalyticsData(data);
+    } catch (error) {
+      console.error("Error fetching analytics:", error);
+    }
+  };
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -72,11 +105,23 @@ export default function DashboardPage() {
     .filter((doc) => doc.status === "ready")
     .slice(0, 6);
 
-  const stats = {
+  // Use real analytics data if available, fallback to local calculation
+  const stats = analyticsData ? {
+    total: analyticsData.documents.total,
+    ready: analyticsData.documents.ready,
+    processing: analyticsData.documents.processing,
+    totalSize: analyticsData.documents.total_storage_bytes,
+    recentUploads: analyticsData.documents.recent_uploads,
+    totalConversations: analyticsData.conversations.total,
+    recentChats: analyticsData.messages.recent,
+  } : {
     total: documents.length,
     ready: documents.filter((d) => d.status === "ready").length,
     processing: documents.filter((d) => d.status === "processing").length,
     totalSize: documents.reduce((acc, doc) => acc + doc.file_size, 0),
+    recentUploads: 0,
+    totalConversations: 0,
+    recentChats: 0,
   };
 
   const quickActions = [
@@ -254,28 +299,28 @@ export default function DashboardPage() {
             label="Total Documents"
             value={stats.total}
             color="blue"
-            trend="+12%"
+            trend={stats.recentUploads > 0 ? `+${stats.recentUploads} this month` : undefined}
+          />
+          <StatCard
+            icon="💬"
+            label="Conversations"
+            value={stats.totalConversations}
+            color="purple"
+            trend={stats.recentChats > 0 ? `${stats.recentChats} recent messages` : undefined}
           />
           <StatCard
             icon="✅"
             label="Ready"
             value={stats.ready}
             color="green"
-            trend="+5%"
-          />
-          <StatCard
-            icon="⏳"
-            label="Processing"
-            value={stats.processing}
-            color="yellow"
-            trend="→"
+            trend={stats.processing > 0 ? `${stats.processing} processing` : "All ready"}
           />
           <StatCard
             icon="💾"
             label="Storage"
             value={`${(stats.totalSize / 1024 / 1024).toFixed(1)} MB`}
-            color="purple"
-            trend="+3.2 MB"
+            color="blue"
+            trend={stats.total > 0 ? `${((stats.totalSize / stats.total) / 1024).toFixed(1)} KB avg` : undefined}
           />
         </div>
 
@@ -328,30 +373,44 @@ export default function DashboardPage() {
               <span>⚡</span> Recent Activity
             </h3>
             <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700/50 p-4 space-y-3">
-              <ActivityItem
-                icon="📄"
-                title="Document uploaded"
-                time="2 minutes ago"
-                color="blue"
-              />
-              <ActivityItem
-                icon="💬"
-                title="Chat session started"
-                time="15 minutes ago"
-                color="purple"
-              />
-              <ActivityItem
-                icon="✅"
-                title="Processing completed"
-                time="1 hour ago"
-                color="green"
-              />
-              <ActivityItem
-                icon="📊"
-                title="Summary generated"
-                time="3 hours ago"
-                color="orange"
-              />
+              {analyticsData && analyticsData.documents.recent_uploads > 0 && (
+                <ActivityItem
+                  icon="📄"
+                  title={`${analyticsData.documents.recent_uploads} documents uploaded`}
+                  time="Last 30 days"
+                  color="blue"
+                />
+              )}
+              {analyticsData && analyticsData.messages.recent > 0 && (
+                <ActivityItem
+                  icon="💬"
+                  title={`${analyticsData.messages.recent} messages sent`}
+                  time="Last 30 days"
+                  color="purple"
+                />
+              )}
+              {analyticsData && analyticsData.documents.ready > 0 && (
+                <ActivityItem
+                  icon="✅"
+                  title={`${analyticsData.documents.ready} documents ready`}
+                  time="Available now"
+                  color="green"
+                />
+              )}
+              {analyticsData && analyticsData.conversations.total > 0 && (
+                <ActivityItem
+                  icon="📊"
+                  title={`${analyticsData.conversations.total} total conversations`}
+                  time="All time"
+                  color="orange"
+                />
+              )}
+              {(!analyticsData || (analyticsData.documents.total === 0 && analyticsData.conversations.total === 0)) && (
+                <div className="text-center py-8 text-gray-400">
+                  <p className="text-sm">No activity yet</p>
+                  <p className="text-xs mt-2">Start by uploading a document!</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
