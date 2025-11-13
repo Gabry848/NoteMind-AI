@@ -147,6 +147,7 @@ export default function QuizPage() {
   const [error, setError] = useState<string | null>(null);
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
 
   const stageIndex = STAGE_FLOW.findIndex((step) => step.id === stage);
   const stageMeta = STAGE_META[stage];
@@ -255,24 +256,31 @@ export default function QuizPage() {
   };
 
   const handleDownloadQuiz = async () => {
+    setShowDownloadMenu(true);
+  };
+
+  const downloadInFormat = async (format: 'json' | 'markdown' | 'pdf') => {
     if (!quizData) return;
 
     try {
-      const data = await quizApi.downloadQuestions(quizData.quiz_id);
-      
-      // Create a blob and download
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `quiz_${quizData.quiz_id}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      if (format === 'json') {
+        const data = await quizApi.downloadQuestions(quizData.quiz_id, 'json');
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `quiz_${quizData.quiz_id}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } else {
+        await quizApi.downloadQuestions(quizData.quiz_id, format);
+      }
+      setShowDownloadMenu(false);
     } catch (error) {
       console.error('Error downloading quiz:', error);
-      setError('Errore durante il download delle domande');
+      setError('Errore durante il download');
     }
   };
 
@@ -512,6 +520,80 @@ export default function QuizPage() {
                 variant="secondary"
               >
                 Chiudi
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Download Format Dialog */}
+      {showDownloadMenu && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="flex items-start justify-between mb-4">
+              <h3 className="text-xl font-bold text-white">Scegli formato</h3>
+              <button
+                onClick={() => setShowDownloadMenu(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <p className="text-gray-300 mb-6">
+              Seleziona il formato per scaricare le domande del quiz:
+            </p>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => downloadInFormat('pdf')}
+                className="w-full flex items-center gap-4 p-4 bg-red-500/10 border border-red-400/40 rounded-xl hover:bg-red-500/20 transition-colors text-left"
+              >
+                <svg className="w-8 h-8 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+                </svg>
+                <div>
+                  <div className="font-semibold text-white">PDF</div>
+                  <div className="text-sm text-gray-400">Formato stampabile professionale</div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => downloadInFormat('markdown')}
+                className="w-full flex items-center gap-4 p-4 bg-blue-500/10 border border-blue-400/40 rounded-xl hover:bg-blue-500/20 transition-colors text-left"
+              >
+                <svg className="w-8 h-8 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                </svg>
+                <div>
+                  <div className="font-semibold text-white">Markdown</div>
+                  <div className="text-sm text-gray-400">Testo formattato modificabile</div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => downloadInFormat('json')}
+                className="w-full flex items-center gap-4 p-4 bg-green-500/10 border border-green-400/40 rounded-xl hover:bg-green-500/20 transition-colors text-left"
+              >
+                <svg className="w-8 h-8 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                </svg>
+                <div>
+                  <div className="font-semibold text-white">JSON</div>
+                  <div className="text-sm text-gray-400">Dati strutturati per sviluppatori</div>
+                </div>
+              </button>
+            </div>
+
+            <div className="mt-4">
+              <Button
+                onClick={() => setShowDownloadMenu(false)}
+                variant="secondary"
+                className="w-full"
+              >
+                Annulla
               </Button>
             </div>
           </div>

@@ -2,6 +2,7 @@
 Quiz API endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from typing import List, Optional
@@ -12,6 +13,12 @@ from app.models.document import Document
 from app.models.quiz import QuizResult, SharedQuiz
 from app.utils.dependencies import get_current_user
 from app.services.gemini_service import gemini_service
+from app.services.quiz_export_service import (
+    generate_quiz_markdown,
+    generate_quiz_pdf,
+    generate_quiz_results_markdown,
+    generate_quiz_results_pdf,
+)
 from app.schemas.quiz import (
     QuizCreateRequest,
     QuizResponse,
@@ -357,56 +364,183 @@ async def get_quiz_result_detail(
 @router.get("/download/{quiz_id}")
 async def download_quiz_questions(
     quiz_id: str,
+    format: str = "json",
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
-    Download quiz questions as JSON
+    Download quiz questions in various formats (json, markdown, pdf)
 
     Args:
         quiz_id: Quiz ID
+        format: Output format (json, markdown, pdf)
         current_user: Current authenticated user
         db: Database session
 
     Returns:
-        Quiz questions data
+        Quiz questions data in requested format
     """
+    # Validate format
+    if format not in ["json", "markdown", "md", "pdf"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid format. Supported formats: json, markdown, pdf",
+        )
+    
+    quiz_data = None
+    
     # Check in memory storage first
     if quiz_id in quiz_storage:
-        quiz_data = quiz_storage[quiz_id]
-        if quiz_data["user_id"] != current_user.id:
+        quiz_storage_data = quiz_storage[quiz_id]
+        if quiz_storage_data["user_id"] != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to download this quiz",
             )
-        return {
+        quiz_data = {
             "quiz_id": quiz_id,
-            "questions": quiz_data["questions"],
-            "question_type": quiz_data["question_type"],
-            "difficulty": quiz_data["difficulty"],
-            "created_at": quiz_data["created_at"].isoformat(),
+            "questions": quiz_storage_data["questions"],
+            "question_type": quiz_storage_data["question_type"],
+            "difficulty": quiz_storage_data["difficulty"],
+            "question_count": quiz_storage_data["question_count"],
+            "created_at": quiz_storage_data["created_at"].isoformat(),
+        }
+    else:
+        # Check in database
+        result = db.query(QuizResult).filter(
+            QuizResult.quiz_id == quiz_id,
+            QuizResult.user_id == current_user.id
+        ).first()
+
+        if not result:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Quiz not found",
+            )
+
+        questions_data = json.loads(result.questions_data)
+        quiz_data = {
+            "quiz_id": quiz_id,
+            "questions": questions_data,
+            "question_type": result.question_type,
+            "difficulty": result.difficulty,
+            "question_count": result.question_count,
+            "created_at": result.created_at.isoformat(),
         }
     
-    # Check in database
+    # Return based on format
+    if format == "json":
+        return quiz_data
+    elif format in ["markdown", "md"]:
+        md_content = generate_quiz_markdown(quiz_data, include_answers=False)
+        return Response(
+            content=md_content,
+            media_type="text/markdown",
+            headers={
+                "Content-Disposition": f"attachment; filename=quiz_{quiz_id}.md"
+            }
+        )
+    elif format == "pdf":
+        pdf_content = generate_quiz_pdf(quiz_data, include_answers=False)
+        return Response(
+            content=pdf_content,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename=quiz_{quiz_id}.pdf"
+            }
+        )
+
+
+@router.get("/results/{result_id}/download")
+async def download_quiz_results(
+    result_id: int,
+    format: str = "json",
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Download quiz results with corrections in various formats (json, markdown, pdf)
+
+    Args:
+        result_id: Quiz result ID
+        format: Output format (json, markdown, pdf)
+        current_user: Current authenticated user
+        db: Database session
+
+    Returns:
+        Quiz results data in requested format
+    """
+    # Validate format
+    if format not in ["json", "markdown", "md", "pdf"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid format. Supported formats: json, markdown, pdf",
+        )
+    
     result = db.query(QuizResult).filter(
-        QuizResult.quiz_id == quiz_id,
+        QuizResult.id == result_id,
         QuizResult.user_id == current_user.id
     ).first()
 
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Quiz not found",
+            detail="Quiz result not found",
         )
 
+    corrections_data = json.loads(result.corrections_data)
     questions_data = json.loads(result.questions_data)
-    return {
-        "quiz_id": quiz_id,
-        "questions": questions_data,
-        "question_type": result.question_type,
-        "difficulty": result.difficulty,
-        "created_at": result.created_at.isoformat(),
-    }
+    
+    if format == "json":
+        return {
+            "quiz_id": result.quiz_id,
+            "score_percentage": result.score_percentage,
+            "correct_answers": result.correct_answers,
+            "total_questions": result.total_questions,
+            "corrections": corrections_data,
+            "overall_feedback": result.overall_feedback,
+            "completed_at": result.completed_at.isoformat(),
+        }
+    elif format in ["markdown", "md"]:
+        quiz_data = {
+            "difficulty": result.difficulty,
+            "question_type": result.question_type,
+        }
+        md_content = generate_quiz_results_markdown(
+            quiz_data,
+            corrections_data,
+            result.score_percentage,
+            result.correct_answers,
+            result.total_questions,
+            result.overall_feedback or ""
+        )
+        return Response(
+            content=md_content,
+            media_type="text/markdown",
+            headers={
+                "Content-Disposition": f"attachment; filename=quiz_results_{result_id}.md"
+            }
+        )
+    elif format == "pdf":
+        quiz_data = {
+            "difficulty": result.difficulty,
+            "question_type": result.question_type,
+        }
+        pdf_content = generate_quiz_results_pdf(
+            quiz_data,
+            corrections_data,
+            result.score_percentage,
+            result.correct_answers,
+            result.total_questions,
+            result.overall_feedback or ""
+        )
+        return Response(
+            content=pdf_content,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename=quiz_results_{result_id}.pdf"
+            }
+        )
 
 
 @router.post("/share", response_model=SharedQuizResponse)

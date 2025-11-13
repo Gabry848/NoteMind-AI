@@ -225,9 +225,50 @@ export const quiz = {
     return response.data;
   },
 
-  downloadQuestions: async (quizId: string) => {
-    const response = await api.get(`/quiz/download/${quizId}`);
-    return response.data;
+  downloadQuestions: async (quizId: string, format: 'json' | 'markdown' | 'pdf' = 'json') => {
+    if (format === 'json') {
+      const response = await api.get(`/quiz/download/${quizId}?format=json`);
+      return response.data;
+    } else {
+      // For markdown and pdf, trigger browser download
+      const response = await api.get(`/quiz/download/${quizId}?format=${format}`, {
+        responseType: 'blob'
+      });
+      const blob = new Blob([response.data], {
+        type: format === 'pdf' ? 'application/pdf' : 'text/markdown'
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `quiz_${quizId}.${format === 'pdf' ? 'pdf' : 'md'}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  },
+
+  downloadResults: async (resultId: number, format: 'json' | 'markdown' | 'pdf' = 'json') => {
+    if (format === 'json') {
+      const response = await api.get(`/quiz/results/${resultId}/download?format=json`);
+      return response.data;
+    } else {
+      // For markdown and pdf, trigger browser download
+      const response = await api.get(`/quiz/results/${resultId}/download?format=${format}`, {
+        responseType: 'blob'
+      });
+      const blob = new Blob([response.data], {
+        type: format === 'pdf' ? 'application/pdf' : 'text/markdown'
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `quiz_results_${resultId}.${format === 'pdf' ? 'pdf' : 'md'}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
   },
 
   share: async (shareRequest: {
