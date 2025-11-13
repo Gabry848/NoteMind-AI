@@ -7,46 +7,14 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useDocumentsStore } from "@/store/useDocumentsStore";
 import { chat, documents as documentsApi } from "@/lib/api";
 import { Button } from "@/components/Button";
 import type { Document, ChatMessage } from "@/types";
-
-// Simple markdown formatter
-function formatMarkdown(text: string): string {
-  let html = text;
-  
-  // Headers
-  html = html.replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold mt-4 mb-2">$1</h3>');
-  html = html.replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold mt-5 mb-3">$1</h2>');
-  html = html.replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold mt-6 mb-4">$1</h1>');
-  
-  // Bold
-  html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>');
-  
-  // Italic
-  html = html.replace(/\*(.*?)\*/g, '<em class="italic">$1</em>');
-  
-  // Code blocks
-  html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre class="bg-gray-700 p-3 rounded my-3 overflow-x-auto"><code>$2</code></pre>');
-  
-  // Inline code
-  html = html.replace(/`([^`]+)`/g, '<code class="bg-gray-700 px-1.5 py-0.5 rounded text-sm">$1</code>');
-  
-  // Links
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-400 hover:underline" target="_blank" rel="noopener">$1</a>');
-  
-  // Lists
-  html = html.replace(/^\* (.*$)/gim, '<li class="ml-4">• $1</li>');
-  html = html.replace(/^- (.*$)/gim, '<li class="ml-4">• $1</li>');
-  
-  // Line breaks
-  html = html.replace(/\n\n/g, '<br/><br/>');
-  html = html.replace(/\n/g, '<br/>');
-  
-  return html;
-}
 
 export default function MultiChatPage() {
   const router = useRouter();
@@ -122,6 +90,12 @@ export default function MultiChatPage() {
   const closeFileViewer = () => {
     setFileViewerWidth(0);
     setSelectedFileContent(null);
+  };
+
+  const handleNewChat = () => {
+    setMessages([]);
+    setConversationId(null);
+    setInputMessage("");
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -289,8 +263,8 @@ export default function MultiChatPage() {
           ) : (
             <>
               {/* Selected Files Bar */}
-              <div className="bg-gray-800 border-b border-gray-700 p-3">
-                <div className="flex flex-wrap gap-2">
+              <div className="bg-gray-800 border-b border-gray-700 p-3 flex justify-between items-center">
+                <div className="flex flex-wrap gap-2 flex-1">
                   {documents
                     .filter((doc) => selectedDocIds.includes(doc.id))
                     .map((doc) => (
@@ -311,6 +285,17 @@ export default function MultiChatPage() {
                       </span>
                     ))}
                 </div>
+                
+                {messages.length > 0 && (
+                  <Button
+                    onClick={handleNewChat}
+                    variant="ghost"
+                    size="sm"
+                    className="text-blue-400 hover:bg-gray-700 ml-2"
+                  >
+                    ➕ New Chat
+                  </Button>
+                )}
               </div>
 
               {/* Messages Area */}
@@ -407,11 +392,30 @@ export default function MultiChatPage() {
 
               <div className="flex-1 overflow-y-auto p-4">
                 <div className="prose prose-invert max-w-none">
-                  {selectedFileContent?.file_type === '.md' ? (
-                    <div 
-                      className="text-sm text-gray-300 leading-relaxed markdown-content"
-                      dangerouslySetInnerHTML={{ __html: formatMarkdown(fileContent) }}
-                    />
+                  {selectedFileContent?.file_type === '.md' || selectedFileContent?.original_filename.endsWith('.md') ? (
+                    <div className="markdown-content text-sm">
+                      <ReactMarkdown 
+                        remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeRaw]}
+                        components={{
+                          h1: (props) => <h1 className="text-2xl font-bold text-white mt-4 mb-2" {...props} />,
+                          h2: (props) => <h2 className="text-xl font-bold text-white mt-3 mb-2" {...props} />,
+                          h3: (props) => <h3 className="text-lg font-bold text-white mt-3 mb-2" {...props} />,
+                          p: (props) => <p className="text-gray-300 my-2 leading-relaxed" {...props} />,
+                          code: ({inline, ...props}) => 
+                            inline ? 
+                              <code className="bg-gray-700 px-1.5 py-0.5 rounded text-sm font-mono" {...props} /> :
+                              <code className="block bg-gray-900 text-white p-3 rounded my-2 overflow-x-auto font-mono text-sm" {...props} />,
+                          pre: (props) => <pre className="my-2" {...props} />,
+                          ul: (props) => <ul className="list-disc list-inside space-y-1 my-2" {...props} />,
+                          ol: (props) => <ol className="list-decimal list-inside space-y-1 my-2" {...props} />,
+                          li: (props) => <li className="ml-2" {...props} />,
+                          a: (props) => <a className="text-blue-400 hover:underline" {...props} />,
+                        }}
+                      >
+                        {fileContent}
+                      </ReactMarkdown>
+                    </div>
                   ) : (
                     <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono leading-relaxed overflow-x-auto">
                       {fileContent}
@@ -495,7 +499,39 @@ function ChatMessageBubble({ message }: { message: ChatMessage }) {
             : "bg-gray-800 text-gray-100 border border-gray-700"
         }`}
       >
-        <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
+        {isUser ? (
+          <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
+        ) : (
+          <div className="markdown-content text-sm">
+            <ReactMarkdown 
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeRaw]}
+              components={{
+                ul: (props) => <ul className="list-disc list-inside space-y-1 my-2" {...props} />,
+                ol: (props) => <ol className="list-decimal list-inside space-y-1 my-2" {...props} />,
+                li: (props) => <li className="ml-2" {...props} />,
+                p: (props) => <p className="my-2" {...props} />,
+                h1: (props) => <h1 className="text-xl font-bold mt-3 mb-2" {...props} />,
+                h2: (props) => <h2 className="text-lg font-bold mt-3 mb-2" {...props} />,
+                h3: (props) => <h3 className="text-base font-bold mt-2 mb-1" {...props} />,
+                code: ({inline, ...props}) => 
+                  inline ? 
+                    <code className="bg-gray-700 px-1.5 py-0.5 rounded text-sm font-mono" {...props} /> :
+                    <code className="block bg-gray-900 text-white p-3 rounded my-2 overflow-x-auto font-mono text-sm" {...props} />,
+                pre: (props) => <pre className="my-2" {...props} />,
+                a: (props) => <a className="text-blue-400 hover:underline" {...props} />,
+                blockquote: (props) => <blockquote className="border-l-4 border-gray-600 pl-3 italic my-2" {...props} />,
+                table: (props) => <table className="border-collapse border border-gray-600 my-2" {...props} />,
+                th: (props) => <th className="border border-gray-600 px-2 py-1 bg-gray-700 font-semibold" {...props} />,
+                td: (props) => <td className="border border-gray-600 px-2 py-1" {...props} />,
+                strong: (props) => <strong className="font-bold" {...props} />,
+                em: (props) => <em className="italic" {...props} />,
+              }}
+            >
+              {message.content}
+            </ReactMarkdown>
+          </div>
+        )}
         {message.citations && message.citations.length > 0 && (
           <div className="mt-3 pt-3 border-t border-gray-600">
             <p className="text-xs opacity-75 mb-2 font-semibold">Sources:</p>
