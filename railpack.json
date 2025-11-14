@@ -7,6 +7,7 @@
   },
   "deploy": {
     "inputs": ["..."],
+    "aptPackages": ["python3", "python3-pip"],
     "startCommand": "./start.sh"
   }
 }
