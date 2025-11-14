@@ -1,18 +1,20 @@
 """
 Quiz API endpoints
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from typing import List, Optional
 import json
+import uuid
 from app.core.database import get_db
 from app.models.user import User
 from app.models.document import Document
 from app.models.quiz import QuizResult, SharedQuiz
 from app.utils.dependencies import get_current_user
 from app.services.gemini_service import gemini_service
+from app.utils.background_tasks import process_quiz_generation
 from app.services.quiz_export_service import (
     generate_quiz_markdown,
     generate_quiz_pdf,
@@ -41,6 +43,7 @@ quiz_storage = {}
 @router.post("/generate", response_model=QuizResponse)
 async def generate_quiz(
     quiz_request: QuizCreateRequest,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -79,34 +82,105 @@ async def generate_quiz(
             detail=f"Some documents are not ready: {', '.join([d.filename for d in not_ready])}",
         )
 
-    try:
-        # Generate quiz using Gemini
-        file_ids = [doc.gemini_file_id for doc in documents]
-        
-        # Use provided language or user's preferred language
-        quiz_language = quiz_request.language or current_user.preferred_language
-        
-        quiz_data = await gemini_service.generate_quiz(
-            file_ids=file_ids,
-            question_count=quiz_request.question_count,
-            question_type=quiz_request.question_type,
-            difficulty=quiz_request.difficulty,
-            language=quiz_language,
+    # Generate quiz ID
+    quiz_id = str(uuid.uuid4())
+    file_ids = [doc.gemini_file_id for doc in documents]
+    
+    # Use provided language or user's preferred language
+    quiz_language = quiz_request.language or current_user.preferred_language
+    
+    # Create placeholder quiz data in storage
+    created_at = datetime.utcnow()
+    quiz_storage[quiz_id] = {
+        "document_ids": quiz_request.document_ids,
+        "file_ids": file_ids,
+        "questions": [],
+        "question_count": quiz_request.question_count,
+        "question_type": quiz_request.question_type,
+        "difficulty": quiz_request.difficulty,
+        "user_id": current_user.id,
+        "created_at": created_at,
+        "status": "generating",
+    }
+    
+    # Start background task to generate quiz
+    background_tasks.add_task(
+        process_quiz_generation,
+        quiz_id=quiz_id,
+        file_ids=file_ids,
+        question_count=quiz_request.question_count,
+        question_type=quiz_request.question_type,
+        difficulty=quiz_request.difficulty,
+        language=quiz_language,
+        user_id=current_user.id,
+        document_ids=quiz_request.document_ids,
+        quiz_storage=quiz_storage,
+    )
+    
+    # Return immediately with placeholder
+    placeholder_question = QuizQuestion(
+        id="placeholder",
+        question="Generating quiz questions...",
+        type="multiple_choice",
+        options=["Please wait", "Quiz is being generated", "Refresh to see questions", "Processing..."]
+    )
+    
+    return QuizResponse(
+        quiz_id=quiz_id,
+        document_ids=quiz_request.document_ids,
+        questions=[placeholder_question],
+        question_count=quiz_request.question_count,
+        question_type=quiz_request.question_type,
+        difficulty=quiz_request.difficulty,
+        created_at=created_at,
+    )
+
+
+@router.get("/{quiz_id}/status")
+async def get_quiz_status(
+    quiz_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get the status of a quiz generation
+
+    Args:
+        quiz_id: Quiz ID
+        current_user: Current authenticated user
+
+    Returns:
+        Quiz status and questions if ready
+    """
+    if quiz_id not in quiz_storage:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Quiz not found",
         )
 
-        # Store quiz data (including correct answers) for later correction
-        quiz_id = quiz_data["quiz_id"]
-        quiz_storage[quiz_id] = {
-            "document_ids": quiz_request.document_ids,
-            "file_ids": file_ids,
-            "questions": quiz_data["questions"],
-            "question_count": len(quiz_data["questions"]),
-            "question_type": quiz_request.question_type,
-            "difficulty": quiz_request.difficulty,
-            "user_id": current_user.id,
-            "created_at": datetime.utcnow(),
-        }
+    quiz_data = quiz_storage[quiz_id]
 
+    # Verify quiz belongs to user
+    if quiz_data["user_id"] != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to access this quiz",
+        )
+
+    status_val = quiz_data.get("status", "generating")
+    
+    if status_val == "error":
+        return {
+            "quiz_id": quiz_id,
+            "status": "error",
+            "error": quiz_data.get("error", "Unknown error"),
+        }
+    elif status_val == "generating":
+        return {
+            "quiz_id": quiz_id,
+            "status": "generating",
+            "message": "Quiz is being generated, please wait...",
+        }
+    else:  # ready
         # Return quiz without correct answers
         questions_without_answers = []
         for q in quiz_data["questions"]:
@@ -117,23 +191,21 @@ async def generate_quiz(
             }
             if q["type"] == "multiple_choice":
                 question["options"] = q["options"]
-            questions_without_answers.append(QuizQuestion(**question))
+            questions_without_answers.append(question)
 
-        return QuizResponse(
-            quiz_id=quiz_id,
-            document_ids=quiz_request.document_ids,
-            questions=questions_without_answers,
-            question_count=len(questions_without_answers),
-            question_type=quiz_request.question_type,
-            difficulty=quiz_request.difficulty,
-            created_at=quiz_storage[quiz_id]["created_at"],
-        )
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate quiz: {str(e)}",
-        )
+        return {
+            "quiz_id": quiz_id,
+            "status": "ready",
+            "quiz": QuizResponse(
+                quiz_id=quiz_id,
+                document_ids=quiz_data["document_ids"],
+                questions=[QuizQuestion(**q) for q in questions_without_answers],
+                question_count=len(questions_without_answers),
+                question_type=quiz_data["question_type"],
+                difficulty=quiz_data["difficulty"],
+                created_at=quiz_data["created_at"],
+            )
+        }
 
 
 @router.post("/submit", response_model=QuizCorrectionResponse)

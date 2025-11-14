@@ -1,12 +1,13 @@
 """
 Document management API endpoints
 """
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, BackgroundTasks
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pathlib import Path
 from app.core.database import get_db
+from app.core.config import settings
 from app.models.user import User
 from app.models.document import Document
 from app.models.folder import Folder
@@ -14,6 +15,7 @@ from app.utils.dependencies import get_current_user
 from app.utils.file_handler import FileHandler
 from app.services.gemini_service import gemini_service
 from app.services.ocr_service import ocr_service
+from app.utils.background_tasks import process_schema_generation
 from app.schemas.document import DocumentResponse, DocumentListResponse, DocumentUpdate, MermaidSchemaResponse
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
@@ -393,6 +395,7 @@ async def get_mermaid_schema(
     regenerate: bool = False,
     diagram_type: str = "auto",
     detail_level: str = "compact",
+    background_tasks: BackgroundTasks = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -438,7 +441,26 @@ async def get_mermaid_schema(
             detail_level="compact",
         )
 
-    # Generate new schema
+    # Generate new schema in background
+    if background_tasks:
+        background_tasks.add_task(
+            process_schema_generation,
+            document_id=document.id,
+            file_id=document.gemini_file_id,
+            diagram_type=diagram_type,
+            detail_level=detail_level,
+            db_url=settings.DATABASE_URL,
+        )
+    
+        # Return immediately with processing status
+        return MermaidSchemaResponse(
+            document_id=document.id,
+            mermaid_schema="graph TD\n    A[Generating schema...] --> B[Please wait]",
+            diagram_type=diagram_type,
+            detail_level=detail_level,
+        )
+    
+    # Fallback: generate synchronously if BackgroundTasks not available
     try:
         mermaid_schema = await gemini_service.generate_mermaid_schema(
             file_id=document.gemini_file_id,

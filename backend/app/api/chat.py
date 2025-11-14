@@ -1,14 +1,16 @@
 """
 Chat API endpoints
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.config import settings
 from app.models.user import User
 from app.models.document import Document
 from app.models.conversation import Conversation, Message
 from app.utils.dependencies import get_current_user
 from app.services.gemini_service import gemini_service
+from app.utils.background_tasks import process_chat_response
 from app.schemas.chat import ChatRequest, ChatResponse, ChatMessage, ConversationResponse
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
@@ -17,6 +19,7 @@ router = APIRouter(prefix="/chat", tags=["Chat"])
 @router.post("", response_model=ChatResponse)
 async def send_message(
     chat_request: ChatRequest,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -104,59 +107,42 @@ async def send_message(
     )
     db.add(user_message)
     db.commit()
+    db.refresh(user_message)
 
-    try:
-        # Get conversation history
-        messages = (
-            db.query(Message)
-            .filter(Message.conversation_id == conversation.id)
-            .order_by(Message.created_at)
-            .all()
-        )
+    # Get conversation history
+    messages = (
+        db.query(Message)
+        .filter(Message.conversation_id == conversation.id)
+        .order_by(Message.created_at)
+        .all()
+    )
 
-        history = [{"role": msg.role, "content": msg.content} for msg in messages[:-1]]  # Exclude current message
+    history = [{"role": msg.role, "content": msg.content} for msg in messages[:-1]]  # Exclude current message
 
-        # Get AI response - use multi-document chat if multiple documents
-        if len(documents) > 1:
-            file_ids = [doc.gemini_file_id for doc in documents]
-            response_text, citations = await gemini_service.chat_with_documents(
-                query=chat_request.message,
-                file_ids=file_ids,
-                conversation_history=history,
-            )
-        else:
-            response_text, citations = await gemini_service.chat_with_document(
-                query=chat_request.message,
-                file_id=documents[0].gemini_file_id,
-                conversation_history=history,
-            )
+    # Start background task to generate AI response
+    file_ids = [doc.gemini_file_id for doc in documents]
+    is_multi = len(documents) > 1
+    
+    background_tasks.add_task(
+        process_chat_response,
+        conversation_id=conversation.id,
+        message=chat_request.message,
+        file_ids=file_ids,
+        history=history,
+        db_url=settings.DATABASE_URL,
+        is_multi_document=is_multi,
+    )
 
-        # Save AI message
-        ai_message = Message(
-            conversation_id=conversation.id,
+    # Return immediately with a processing message
+    return ChatResponse(
+        conversation_id=conversation.id,
+        message=ChatMessage(
             role="assistant",
-            content=response_text,
-            citations=citations if citations else None,
-        )
-        db.add(ai_message)
-        db.commit()
-        db.refresh(ai_message)
-
-        return ChatResponse(
-            conversation_id=conversation.id,
-            message=ChatMessage(
-                role=ai_message.role,
-                content=ai_message.content,
-                citations=ai_message.citations,
-                created_at=ai_message.created_at,
-            ),
-        )
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate response: {str(e)}",
-        )
+            content="Processing your request...",
+            citations=None,
+            created_at=user_message.created_at,
+        ),
+    )
 
 
 @router.get("/history/{document_id}", response_model=list[ConversationResponse])

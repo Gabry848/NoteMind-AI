@@ -1,13 +1,15 @@
 """
 Summary generation API endpoints
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.config import settings
 from app.models.user import User
 from app.models.document import Document
 from app.utils.dependencies import get_current_user
 from app.services.gemini_service import gemini_service
+from app.utils.background_tasks import process_summary_generation
 from app.schemas.document import SummaryRequest, SummaryResponse
 
 router = APIRouter(prefix="/summaries", tags=["Summaries"])
@@ -16,6 +18,7 @@ router = APIRouter(prefix="/summaries", tags=["Summaries"])
 @router.post("/generate", response_model=SummaryResponse)
 async def generate_summary(
     summary_request: SummaryRequest,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -52,33 +55,21 @@ async def generate_summary(
             detail=f"Document is not ready. Status: {document.status}",
         )
 
-    try:
-        # Generate summary
-        summary = await gemini_service.generate_summary(
-            file_id=document.gemini_file_id,
-            summary_type=summary_request.summary_type,
-        )
+    # Start background task to generate summary
+    background_tasks.add_task(
+        process_summary_generation,
+        document_id=document.id,
+        file_id=document.gemini_file_id,
+        summary_type=summary_request.summary_type,
+        db_url=settings.DATABASE_URL,
+    )
 
-        # Extract key topics
-        topics = await gemini_service.extract_key_topics(
-            file_id=document.gemini_file_id
-        )
-
-        # Save summary to document
-        document.summary = summary
-        db.commit()
-
-        return SummaryResponse(
-            document_id=document.id,
-            summary=summary,
-            topics=topics,
-        )
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate summary: {str(e)}",
-        )
+    # Return immediately with processing status
+    return SummaryResponse(
+        document_id=document.id,
+        summary="Generating summary in background...",
+        topics=[],
+    )
 
 
 @router.get("/{document_id}", response_model=SummaryResponse)
