@@ -118,6 +118,66 @@ export const documents = {
     const response = await api.get(`/documents/${id}/mermaid${queryString ? '?' + queryString : ''}`);
     return response.data;
   },
+
+  download: async (id: number): Promise<void> => {
+    const token = localStorage.getItem("token");
+    const url = `${API_URL}/api/documents/${id}/download`;
+    
+    // Create a temporary link element to trigger download
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.style.display = 'none';
+    
+    // Add authorization header via fetch and convert to blob
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error('Download failed');
+    }
+    
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    
+    // Get filename from Content-Disposition header or default
+    const contentDisposition = response.headers.get('content-disposition');
+    let filename = 'document';
+    if (contentDisposition) {
+      const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(contentDisposition);
+      if (matches && matches[1]) {
+        filename = matches[1].replace(/['"]/g, '');
+      }
+    }
+    
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
+  },
+
+  merge: async (documentIds: number[], mergedFilename?: string, folderId?: number): Promise<Document> => {
+    const formData = new FormData();
+    documentIds.forEach(id => formData.append('document_ids', id.toString()));
+    if (mergedFilename) {
+      formData.append('merged_filename', mergedFilename);
+    }
+    if (folderId) {
+      formData.append('folder_id', folderId.toString());
+    }
+    
+    const response = await api.post("/documents/merge", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data;
+  },
 };
 
 // Chat API

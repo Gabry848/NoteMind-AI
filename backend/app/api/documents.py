@@ -2,6 +2,7 @@
 Document management API endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pathlib import Path
@@ -251,6 +252,49 @@ async def get_document(
     return DocumentResponse.from_orm(document)
 
 
+@router.get("/{document_id}/download")
+async def download_document(
+    document_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Download a document file
+
+    Args:
+        document_id: Document ID
+        current_user: Current authenticated user
+        db: Database session
+
+    Returns:
+        File download response
+    """
+    document = (
+        db.query(Document)
+        .filter(Document.id == document_id, Document.user_id == current_user.id)
+        .first()
+    )
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+
+    # Check if file exists
+    if not Path(document.file_path).exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="File not found on disk",
+        )
+
+    return FileResponse(
+        path=document.file_path,
+        filename=document.original_filename,
+        media_type="application/octet-stream",
+    )
+
+
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_document(
     document_id: int,
@@ -419,4 +463,133 @@ async def get_mermaid_schema(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate Mermaid schema: {str(e)}",
+        )
+
+
+@router.post("/merge", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
+async def merge_documents(
+    document_ids: List[int] = Form(...),
+    merged_filename: Optional[str] = Form(None),
+    folder_id: Optional[int] = Form(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Merge multiple documents into one
+
+    Args:
+        document_ids: List of document IDs to merge (at least 2)
+        merged_filename: Optional name for the merged document
+        folder_id: Optional folder ID for the merged document
+        current_user: Current authenticated user
+        db: Database session
+
+    Returns:
+        Created merged document information
+    """
+    if len(document_ids) < 2:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="At least 2 documents are required to merge",
+        )
+
+    # Validate all documents exist and belong to user
+    documents = []
+    for doc_id in document_ids:
+        doc = (
+            db.query(Document)
+            .filter(Document.id == doc_id, Document.user_id == current_user.id)
+            .first()
+        )
+        if not doc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Document with ID {doc_id} not found",
+            )
+        if doc.status != "ready":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Document {doc.original_filename} is not ready (status: {doc.status})",
+            )
+        documents.append(doc)
+
+    # Validate folder if provided
+    if folder_id:
+        folder = (
+            db.query(Folder)
+            .filter(Folder.id == folder_id, Folder.user_id == current_user.id)
+            .first()
+        )
+        if not folder:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Folder not found",
+            )
+
+    try:
+        # Read and merge content from all documents
+        merged_content = []
+        for doc in documents:
+            content = FileHandler.read_file_content(doc.file_path)
+            merged_content.append(f"# {doc.original_filename}\n\n{content}\n\n")
+
+        full_content = "\n---\n\n".join(merged_content)
+
+        # Generate filename if not provided
+        if not merged_filename:
+            merged_filename = f"merged_{documents[0].original_filename}"
+        
+        # Ensure .md extension
+        if not merged_filename.endswith('.md'):
+            merged_filename = f"{merged_filename}.md"
+
+        # Save merged content to disk
+        import uuid
+        unique_filename = f"{uuid.uuid4()}.md"
+        file_path = Path("uploads") / unique_filename
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(full_content)
+
+        # Create document record
+        merged_document = Document(
+            user_id=current_user.id,
+            folder_id=folder_id,
+            filename=unique_filename,
+            original_filename=merged_filename,
+            file_path=str(file_path),
+            file_size=FileHandler.get_file_size(str(file_path)),
+            file_type=".md",
+            status="processing",
+        )
+
+        db.add(merged_document)
+        db.commit()
+        db.refresh(merged_document)
+
+        # Upload to Gemini API
+        try:
+            gemini_file_id = await gemini_service.upload_file(
+                file_path=str(file_path),
+                display_name=merged_filename,
+            )
+
+            merged_document.gemini_file_id = gemini_file_id
+            merged_document.status = "ready"
+            db.commit()
+            db.refresh(merged_document)
+
+        except Exception as e:
+            merged_document.status = "error"
+            merged_document.error_message = str(e)
+            db.commit()
+            db.refresh(merged_document)
+
+        return DocumentResponse.from_orm(merged_document)
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to merge documents: {str(e)}",
         )

@@ -178,6 +178,19 @@ export default function DocumentPage() {
                 {(selectedDocument.file_size / 1024).toFixed(1)} KB • {selectedDocument.status}
               </p>
             </div>
+            <Button 
+              variant="secondary" 
+              onClick={async () => {
+                try {
+                  await docsApi.download(documentId);
+                } catch (error) {
+                  console.error("Download failed:", error);
+                  alert("Failed to download document");
+                }
+              }}
+            >
+              ⬇️ Download
+            </Button>
           </div>
         </div>
       </div>

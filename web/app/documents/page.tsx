@@ -12,7 +12,7 @@ import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { FileUpload } from "@/components/FileUpload";
 import { FolderTree } from "@/components/FolderTree";
-import { folders as foldersApi } from "@/lib/api";
+import { folders as foldersApi, documents as docsApi } from "@/lib/api";
 import type { Document, Folder } from "@/types";
 
 export default function DocumentsPage() {
@@ -31,6 +31,10 @@ export default function DocumentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "ready" | "processing" | "error">("all");
   const [draggedDoc, setDraggedDoc] = useState<Document | null>(null);
+  const [selectedDocuments, setSelectedDocuments] = useState<Set<number>>(new Set());
+  const [showMergeDialog, setShowMergeDialog] = useState(false);
+  const [mergeFilename, setMergeFilename] = useState("");
+  const [isMerging, setIsMerging] = useState(false);
 
   useEffect(() => {
     if (isInitialized && !user) {
@@ -171,6 +175,42 @@ export default function DocumentsPage() {
     }
   };
 
+  const toggleDocumentSelection = (docId: number) => {
+    setSelectedDocuments((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(docId)) {
+        newSet.delete(docId);
+      } else {
+        newSet.add(docId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleMergeDocuments = async () => {
+    if (selectedDocuments.size < 2) {
+      alert("Please select at least 2 documents to merge");
+      return;
+    }
+
+    setIsMerging(true);
+    try {
+      const documentIds = Array.from(selectedDocuments);
+      await docsApi.merge(documentIds, mergeFilename || undefined, selectedFolder);
+      
+      setShowMergeDialog(false);
+      setSelectedDocuments(new Set());
+      setMergeFilename("");
+      await fetchDocuments();
+      alert("Documents merged successfully!");
+    } catch (error) {
+      console.error("Failed to merge documents:", error);
+      alert("Failed to merge documents");
+    } finally {
+      setIsMerging(false);
+    }
+  };
+
   // Filter documents
   const filteredDocuments = documents.filter((doc) => {
     const matchesSearch = doc.original_filename.toLowerCase().includes(searchQuery.toLowerCase());
@@ -227,6 +267,22 @@ export default function DocumentsPage() {
               >
                 📊 Grid View
               </Button>
+              {selectedDocuments.size >= 2 && (
+                <Button
+                  variant="primary"
+                  onClick={() => setShowMergeDialog(true)}
+                >
+                  🔗 Merge {selectedDocuments.size} Documents
+                </Button>
+              )}
+              {selectedDocuments.size > 0 && (
+                <Button
+                  variant="ghost"
+                  onClick={() => setSelectedDocuments(new Set())}
+                >
+                  Clear Selection
+                </Button>
+              )}
             </div>
             <Button
               variant="primary"
@@ -324,11 +380,69 @@ export default function DocumentsPage() {
                 onClick={() => handleDocumentClick(doc)}
                 onDelete={(e) => handleDelete(e, doc.id)}
                 onDragStart={() => handleDragStart(doc)}
+                isSelected={selectedDocuments.has(doc.id)}
+                onToggleSelect={() => toggleDocumentSelection(doc.id)}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Merge Dialog */}
+      {showMergeDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-gray-800 rounded-lg border border-gray-700 p-6 w-full max-w-md"
+          >
+            <h3 className="text-xl font-bold text-white mb-4">
+              Merge Documents
+            </h3>
+
+            <p className="text-gray-300 mb-4">
+              You are merging {selectedDocuments.size} documents into one.
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Merged Filename (optional)
+                </label>
+                <input
+                  type="text"
+                  value={mergeFilename}
+                  onChange={(e) => setMergeFilename(e.target.value)}
+                  className="w-full px-4 py-2 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="merged_document.md"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Leave empty for auto-generated name
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <Button
+                variant="secondary"
+                onClick={() => setShowMergeDialog(false)}
+                className="flex-1"
+                disabled={isMerging}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleMergeDocuments}
+                className="flex-1"
+                disabled={isMerging}
+              >
+                {isMerging ? "Merging..." : "Merge"}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* Folder Dialog */}
       {showFolderDialog && (
@@ -408,11 +522,15 @@ function DocumentCard({
   onClick,
   onDelete,
   onDragStart,
+  isSelected = false,
+  onToggleSelect,
 }: {
   document: Document;
   onClick: () => void;
   onDelete: (e: React.MouseEvent) => void;
   onDragStart: () => void;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
 }) {
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
@@ -422,6 +540,18 @@ function DocumentCard({
     e.stopPropagation();
     setContextMenuPos({ x: e.clientX, y: e.clientY });
     setShowContextMenu(true);
+  };
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    if (e.shiftKey || e.ctrlKey || e.metaKey) {
+      // If modifier key is pressed, toggle selection
+      if (onToggleSelect) {
+        onToggleSelect();
+      }
+    } else {
+      // Normal click, open document
+      onClick();
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -442,14 +572,21 @@ function DocumentCard({
       <motion.div
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        onClick={onClick}
+        onClick={handleCardClick}
         onContextMenu={handleContextMenu}
         draggable
         onDragStart={onDragStart}
-        className="bg-gray-800 rounded-xl shadow-md p-6 cursor-pointer hover:shadow-xl transition-all duration-300 border border-gray-700"
+        className={`bg-gray-800 rounded-xl shadow-md p-6 cursor-pointer hover:shadow-xl transition-all duration-300 border ${
+          isSelected ? "border-blue-500 ring-2 ring-blue-500" : "border-gray-700"
+        }`}
       >
       <div className="flex justify-between items-start mb-4">
-        <div className="text-4xl">📄</div>
+        <div className="flex items-center gap-2">
+          <div className="text-4xl">📄</div>
+          {isSelected && (
+            <div className="text-blue-500 text-xl">✓</div>
+          )}
+        </div>
         <button
           onClick={onDelete}
           className="text-gray-500 hover:text-red-400 transition-colors"
@@ -520,6 +657,19 @@ function DocumentCard({
           >
             <span>👁️</span>
             <span>Apri</span>
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onToggleSelect) {
+                onToggleSelect();
+              }
+              setShowContextMenu(false);
+            }}
+            className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 transition-colors flex items-center gap-2"
+          >
+            <span>{isSelected ? "☑️" : "☐"}</span>
+            <span>{isSelected ? "Deseleziona" : "Seleziona"}</span>
           </button>
           <button
             onClick={(e) => {
