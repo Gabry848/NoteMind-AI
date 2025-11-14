@@ -1,28 +1,17 @@
-# Backend Dockerfile
+# filepath: /home/gabry848/Scrivania/to-do app/Server/Dockerfile
 FROM python:3.13
 
-# Set working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy requirements file
+# Copia il file delle dipendenze e installale
 COPY requirements.txt .
+RUN pip install --upgrade pip && pip install -r requirements.txt
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy application code
+# Copia il resto dell'applicazione
 COPY . .
 
-# Create necessary directories
-RUN mkdir -p /app/uploads /app/data
-
-# Expose port
+# Esponi la porta usata dall'applicazione
 EXPOSE 8000
 
-# Run the application
+# Avvia l'app come se eseguissimo `python main.py`
 CMD ["python", "main.py"]
