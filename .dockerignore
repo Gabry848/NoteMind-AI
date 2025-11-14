@@ -1,0 +1,30 @@
+# Backend
+backend/__pycache__
+backend/venv
+backend/env
+backend/.env
+backend/*.db
+backend/uploads/*
+backend/data/*
+backend/.pytest_cache
+backend/htmlcov
+backend/.coverage
+
+# Frontend
+web/node_modules
+web/.next
+web/out
+web/.env.local
+web/.env.development.local
+web/.env.test.local
+web/.env.production.local
+
+# General
+.git
+.gitignore
+*.md
+!README.md
+.DS_Store
+*.log
+.vscode
+.idea
