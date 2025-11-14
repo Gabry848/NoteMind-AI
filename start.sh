@@ -51,12 +51,22 @@ log() {
 run_backend() {
   cd "${ROOT_DIR}/backend"
 
+  VENV_DIR="${VENV_DIR:-${PWD}/.venv}"
+  if [ ! -d "${VENV_DIR}" ]; then
+    log "Creating backend virtualenv at ${VENV_DIR}"
+    "${PYTHON_BIN}" -m venv "${VENV_DIR}"
+  fi
+
+  # shellcheck disable=SC1090
+  . "${VENV_DIR}/bin/activate"
+  VENV_PYTHON="${VENV_DIR}/bin/python"
+
   log "Installing backend dependencies"
-  "${PYTHON_BIN}" -m pip install --upgrade pip
-  "${PYTHON_BIN}" -m pip install --no-cache-dir -r requirements.txt
+  "${VENV_PYTHON}" -m pip install --upgrade pip
+  "${VENV_PYTHON}" -m pip install --no-cache-dir -r requirements.txt
 
   log "Starting FastAPI backend via Uvicorn"
-  exec "${PYTHON_BIN}" -m uvicorn main:app --host 0.0.0.0 --port "${PORT:-8000}"
+  exec "${VENV_PYTHON}" -m uvicorn main:app --host 0.0.0.0 --port "${PORT:-8000}"
 }
 
 run_frontend() {
