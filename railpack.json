@@ -1,0 +1,12 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "provider": "shell",
+  "packages": {
+    "python": "3.11",
+    "node": "22"
+  },
+  "deploy": {
+    "inputs": ["..."],
+    "startCommand": "./start.sh"
+  }
+}
