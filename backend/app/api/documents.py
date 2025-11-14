@@ -347,6 +347,8 @@ async def update_document(
 async def get_mermaid_schema(
     document_id: int,
     regenerate: bool = False,
+    diagram_type: str = "auto",
+    detail_level: str = "compact",
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -356,6 +358,8 @@ async def get_mermaid_schema(
     Args:
         document_id: Document ID
         regenerate: Force regeneration even if schema exists
+        diagram_type: Type of diagram (auto, flowchart, mindmap, graph, sequence)
+        detail_level: Level of detail (compact, balanced, detailed)
         current_user: Current authenticated user
         db: Database session
 
@@ -381,26 +385,34 @@ async def get_mermaid_schema(
         )
 
     # Return existing schema if available and not forcing regeneration
-    if document.mermaid_schema and not regenerate:
+    # Note: with new parameters, we always regenerate to apply new settings
+    if document.mermaid_schema and not regenerate and diagram_type == "auto" and detail_level == "compact":
         return MermaidSchemaResponse(
             document_id=document.id,
             mermaid_schema=document.mermaid_schema,
+            diagram_type="auto",
+            detail_level="compact",
         )
 
     # Generate new schema
     try:
         mermaid_schema = await gemini_service.generate_mermaid_schema(
-            file_id=document.gemini_file_id
+            file_id=document.gemini_file_id,
+            diagram_type=diagram_type,
+            detail_level=detail_level,
         )
 
-        # Save to database
-        document.mermaid_schema = mermaid_schema
-        db.commit()
-        db.refresh(document)
+        # Save to database (only if default parameters)
+        if diagram_type == "auto" and detail_level == "compact":
+            document.mermaid_schema = mermaid_schema
+            db.commit()
+            db.refresh(document)
 
         return MermaidSchemaResponse(
             document_id=document.id,
             mermaid_schema=mermaid_schema,
+            diagram_type=diagram_type,
+            detail_level=detail_level,
         )
 
     except Exception as e:

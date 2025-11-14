@@ -36,6 +36,8 @@ export default function DocumentPage() {
   const [isLoadingContent, setIsLoadingContent] = useState(false);
   const [mermaidSchema, setMermaidSchema] = useState<string | null>(null);
   const [isLoadingSchema, setIsLoadingSchema] = useState(false);
+  const [diagramType, setDiagramType] = useState<string>("auto");
+  const [detailLevel, setDetailLevel] = useState<string>("compact");
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -134,7 +136,7 @@ export default function DocumentPage() {
 
     setIsLoadingSchema(true);
     try {
-      const result = await docsApi.getMermaidSchema(documentId, regenerate);
+      const result = await docsApi.getMermaidSchema(documentId, regenerate, diagramType, detailLevel);
       setMermaidSchema(result.mermaid_schema);
     } catch (error) {
       console.error("Failed to load Mermaid schema:", error);
@@ -370,17 +372,62 @@ export default function DocumentPage() {
           <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-md p-6">
             {mermaidSchema ? (
               <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-white">Document Schema</h2>
-                  <Button 
-                    onClick={() => handleLoadSchema(true)} 
-                    variant="secondary"
-                    disabled={isLoadingSchema}
-                  >
-                    {isLoadingSchema ? "Regenerating..." : "Regenerate Schema"}
-                  </Button>
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold text-white">Document Schema</h2>
+                    <Button 
+                      onClick={() => handleLoadSchema(true)} 
+                      variant="secondary"
+                      disabled={isLoadingSchema}
+                    >
+                      {isLoadingSchema ? "Regenerating..." : "Regenerate"}
+                    </Button>
+                  </div>
+                  
+                  {/* Diagram Settings */}
+                  <div className="flex flex-wrap gap-4 items-center bg-gray-700/50 p-4 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <label className="text-sm font-medium text-gray-300">Type:</label>
+                      <select
+                        value={diagramType}
+                        onChange={(e) => setDiagramType(e.target.value)}
+                        className="px-3 py-1.5 bg-gray-700 text-white rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      >
+                        <option value="auto">Auto</option>
+                        <option value="flowchart">Flowchart</option>
+                        <option value="mindmap">Mindmap</option>
+                        <option value="graph">Graph</option>
+                        <option value="sequence">Sequence</option>
+                      </select>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <label className="text-sm font-medium text-gray-300">Detail:</label>
+                      <select
+                        value={detailLevel}
+                        onChange={(e) => setDetailLevel(e.target.value)}
+                        className="px-3 py-1.5 bg-gray-700 text-white rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      >
+                        <option value="compact">Compact (5-8 nodes)</option>
+                        <option value="balanced">Balanced (10-15 nodes)</option>
+                        <option value="detailed">Detailed (15-25 nodes)</option>
+                      </select>
+                    </div>
+                    
+                    <Button
+                      onClick={() => {
+                        setMermaidSchema(null);
+                        handleLoadSchema(true);
+                      }}
+                      variant="primary"
+                      className="ml-auto"
+                    >
+                      Apply Changes
+                    </Button>
+                  </div>
                 </div>
-                <div className="bg-white rounded-lg p-4 overflow-x-auto">
+                
+                <div className="bg-gray-900 rounded-lg overflow-hidden">
                   <MermaidDiagram chart={mermaidSchema} />
                 </div>
                 <details className="mt-4">

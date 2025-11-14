@@ -290,12 +290,19 @@ Return only the topics as a comma-separated list, nothing else."""
             print(f"Failed to extract key topics: {str(e)}")
             return []
 
-    async def generate_mermaid_schema(self, file_id: str) -> str:
+    async def generate_mermaid_schema(
+        self, 
+        file_id: str,
+        diagram_type: str = "auto",
+        detail_level: str = "compact",
+    ) -> str:
         """
         Generate a Mermaid diagram schema of the document structure
 
         Args:
             file_id: Gemini file ID
+            diagram_type: Type of diagram (auto, flowchart, mindmap, graph, sequence)
+            detail_level: Level of detail (compact, balanced, detailed)
 
         Returns:
             Mermaid diagram syntax as string
@@ -303,55 +310,79 @@ Return only the topics as a comma-separated list, nothing else."""
         try:
             file = genai.get_file(name=file_id)
 
-            prompt = """Analyze this document and create a clear, readable Mermaid diagram that represents its main structure.
+            # Determine node count based on detail level
+            node_counts = {
+                "compact": "5-8 nodes",
+                "balanced": "10-15 nodes",
+                "detailed": "15-25 nodes",
+            }
+            max_nodes = node_counts.get(detail_level, "5-8 nodes")
+            
+            # Determine diagram type instruction
+            type_instructions = {
+                "auto": "Choose the BEST diagram type (flowchart TD, mindmap, or graph TD) based on the document structure.",
+                "flowchart": "Use 'flowchart TD' (top-down flowchart) format.",
+                "mindmap": "Use 'mindmap' format with proper indentation.",
+                "graph": "Use 'graph TD' (top-down graph) format.",
+                "sequence": "Use 'sequenceDiagram' format for process flows.",
+            }
+            type_instruction = type_instructions.get(diagram_type, type_instructions["auto"])
+            
+            prompt = f"""Analyze this document and create a clear, readable Mermaid diagram that represents its structure.
 
 CRITICAL INSTRUCTIONS:
-1. Create a COMPACT diagram with ONLY the main topics (5-10 nodes maximum)
-2. Use VERTICAL layout (TD = Top Down) for flowcharts
-3. Keep labels SHORT (1-3 words)
-4. Return ONLY raw Mermaid code (NO ```mermaid markers)
-5. NEVER use colons (:) in labels
-6. Focus on HIGH-LEVEL structure, not every detail
+1. Create a diagram with {max_nodes} maximum
+2. {type_instruction}
+3. Use VERTICAL layout (TD = Top Down) for flowcharts/graphs
+4. Keep labels SHORT (1-3 words for compact, 2-5 words for others)
+5. Return ONLY raw Mermaid code (NO ```mermaid markers)
+6. NEVER use colons (:) in labels
 
-Example 1 - COMPACT MINDMAP:
+Example 1 - MINDMAP (for hierarchical topics):
 mindmap
   root((Main Topic))
     Section 1
-      Key Point A
-      Key Point B
+      Point A
+      Point B
     Section 2
-      Key Point C
-      Key Point D
+      Point C
     Section 3
-      Key Point E
 
-Example 2 - VERTICAL FLOWCHART (BEST FOR READABILITY):
+Example 2 - FLOWCHART TD (BEST for processes):
 flowchart TD
-    A[Document] --> B[Part 1]
-    A --> C[Part 2]
-    A --> D[Part 3]
-    B --> E[Topic A]
-    C --> F[Topic B]
-    D --> G[Topic C]
-
-Example 3 - SIMPLE GRAPH:
-graph TD
-    A[Main] --> B[Section 1]
+    A[Start] --> B[Section 1]
     A --> C[Section 2]
-    B --> D[Point A]
-    C --> E[Point B]
+    B --> D[Topic A]
+    C --> E[Topic B]
+    D --> F[End]
+    E --> F
+
+Example 3 - GRAPH TD (for relationships):
+graph TD
+    A[Main] --> B[Part 1]
+    A --> C[Part 2]
+    B --> D[Detail A]
+    C --> E[Detail B]
+
+Example 4 - SEQUENCE (for processes):
+sequenceDiagram
+    participant A as Start
+    participant B as Step 1
+    participant C as Step 2
+    A->>B: Process
+    B->>C: Continue
+    C->>A: Complete
 
 RULES:
-- Use flowchart TD (Top-Down) for best vertical display
-- Maximum 8-10 nodes total
-- Labels: 1-3 words only
-- NO colons (:) anywhere
-- Show only main structure, not details
-- Keep it simple and readable
+- Maximum {max_nodes} as specified
+- Labels: SHORT and descriptive
+- NO colons (:) anywhere in labels
+- Use vertical layout (TD) for flowchart/graph
+- Focus on structure appropriate for detail level
 
 WRONG:
 flowchart TD
-    A[Introduction: Overview of Topic] ❌ TOO LONG
+    A[Introduction: Overview] ❌ HAS COLONS
     B[Section 1.1: Details] ❌ HAS COLONS
 
 CORRECT:
@@ -359,7 +390,7 @@ flowchart TD
     A[Introduction] ✓
     B[Section 1] ✓
 
-Generate a COMPACT, VERTICAL diagram now (5-10 nodes max):"""
+Generate the diagram now with {max_nodes} maximum:"""
 
             response = self.model.generate_content(
                 [prompt, file],

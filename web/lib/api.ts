@@ -98,8 +98,24 @@ export const documents = {
     return response.data;
   },
 
-  getMermaidSchema: async (id: number, regenerate: boolean = false): Promise<{ document_id: number; mermaid_schema: string }> => {
-    const response = await api.get(`/documents/${id}/mermaid${regenerate ? '?regenerate=true' : ''}`);
+  getMermaidSchema: async (
+    id: number, 
+    regenerate: boolean = false,
+    diagramType: string = "auto",
+    detailLevel: string = "compact"
+  ): Promise<{ 
+    document_id: number; 
+    mermaid_schema: string;
+    diagram_type: string;
+    detail_level: string;
+  }> => {
+    const params = new URLSearchParams();
+    if (regenerate) params.append('regenerate', 'true');
+    if (diagramType !== 'auto') params.append('diagram_type', diagramType);
+    if (detailLevel !== 'compact') params.append('detail_level', detailLevel);
+    
+    const queryString = params.toString();
+    const response = await api.get(`/documents/${id}/mermaid${queryString ? '?' + queryString : ''}`);
     return response.data;
   },
 };

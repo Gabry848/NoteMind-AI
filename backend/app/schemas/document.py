@@ -54,8 +54,17 @@ class SummaryResponse(BaseModel):
     topics: list[str]
 
 
+class MermaidSchemaRequest(BaseModel):
+    """Schema for Mermaid schema generation request"""
+
+    diagram_type: str = "auto"  # auto, flowchart, mindmap, graph, sequence
+    detail_level: str = "compact"  # compact, balanced, detailed
+
+
 class MermaidSchemaResponse(BaseModel):
     """Schema for Mermaid schema response"""
 
     document_id: int
     mermaid_schema: str
+    diagram_type: str
+    detail_level: str
