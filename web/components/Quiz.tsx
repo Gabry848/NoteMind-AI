@@ -61,60 +61,62 @@ export const Quiz: React.FC<QuizProps> = ({ questions, onSubmit, isSubmitting = 
   const hasAnswer = currentAnswer.trim() !== '';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Progress Bar */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4">
         <div className="flex-1 h-2 rounded-full bg-white/10">
           <div
             className="h-2 rounded-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 transition-all duration-300"
             style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
           />
         </div>
-        <span className="text-sm text-gray-300 font-medium min-w-fit">
+        <span className="text-xs sm:text-sm text-gray-300 font-medium min-w-fit">
           {currentQuestionIndex + 1} / {questions.length}
         </span>
       </div>
 
       {/* Question Card */}
-      <Card className="p-6 bg-[#0B1327]/70 backdrop-blur border-white/10 shadow-xl">
-        <div className="space-y-6">
+      <Card className="p-4 sm:p-6 bg-[#0B1327]/70 backdrop-blur border-white/10 shadow-xl">
+        <div className="space-y-4 sm:space-y-6">
           <div>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="rounded-full bg-blue-500/15 px-3 py-1 text-sm font-medium text-blue-300">
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <span className="rounded-full bg-blue-500/15 px-2 sm:px-3 py-1 text-xs sm:text-sm font-medium text-blue-300">
                 Domanda {currentQuestionIndex + 1}
               </span>
               <span className="rounded px-2 py-1 text-xs text-gray-300 bg-white/5">
-                {currentQuestion.type === 'multiple_choice' ? 'Risposta multipla' : 'Risposta aperta'}
+                {currentQuestion.type === 'multiple_choice' ? 'Multipla' : 'Aperta'}
               </span>
             </div>
-            <h3 className="text-xl font-semibold text-white">{currentQuestion.question}</h3>
+            <h3 className="text-base sm:text-xl font-semibold text-white leading-relaxed">{currentQuestion.question}</h3>
           </div>
 
           {/* Multiple Choice Options */}
           {currentQuestion.type === 'multiple_choice' && currentQuestion.options && (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {currentQuestion.options.map((option) => (
-                <label
+                <button
                   key={option.id}
-                  className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                  onClick={() => handleAnswer(currentQuestion.id, option.id)}
+                  className={`w-full flex items-start gap-3 p-3 sm:p-4 border-2 rounded-lg transition-all text-left ${
                     currentAnswer === option.id
                       ? 'border-blue-400/60 bg-blue-500/15 shadow-lg shadow-blue-900/40'
-                      : 'border-white/10 bg-white/5 hover:border-blue-400/40 hover:bg-blue-500/10'
+                      : 'border-white/10 bg-white/5 hover:border-blue-400/40 hover:bg-blue-500/10 active:bg-blue-500/20'
                   }`}
                 >
-                  <input
-                    type="radio"
-                    name={`question-${currentQuestion.id}`}
-                    value={option.id}
-                    checked={currentAnswer === option.id}
-                    onChange={(e) => handleAnswer(currentQuestion.id, e.target.value)}
-                    className="mt-1 h-4 w-4 border border-white/20 bg-[#0B1327]/70 text-blue-500"
-                  />
-                  <div className="flex-1">
-                    <span className="font-medium text-white">{option.id}.</span>{' '}
-                    <span className="text-gray-300">{option.text}</span>
+                  <div className={`flex-shrink-0 mt-0.5 w-5 h-5 sm:w-4 sm:h-4 rounded-full border-2 flex items-center justify-center transition-all ${
+                    currentAnswer === option.id
+                      ? 'border-blue-400 bg-blue-500'
+                      : 'border-white/20 bg-[#0B1327]/70'
+                  }`}>
+                    {currentAnswer === option.id && (
+                      <div className="w-2 h-2 sm:w-2 sm:h-2 rounded-full bg-white" />
+                    )}
                   </div>
-                </label>
+                  <div className="flex-1 min-w-0">
+                    <span className="font-medium text-white text-sm sm:text-base">{option.id}.</span>{' '}
+                    <span className="text-gray-300 text-sm sm:text-base">{option.text}</span>
+                  </div>
+                </button>
               ))}
             </div>
           )}
@@ -126,9 +128,9 @@ export const Quiz: React.FC<QuizProps> = ({ questions, onSubmit, isSubmitting = 
                 value={currentAnswer}
                 onChange={(e) => handleAnswer(currentQuestion.id, e.target.value)}
                 placeholder="Scrivi la tua risposta qui..."
-                className="h-40 w-full resize-none rounded-lg border-2 border-white/10 bg-[#0B1327]/70 p-4 text-white placeholder-gray-500 focus:border-blue-400 focus:outline-none"
+                className="min-h-[120px] sm:h-40 w-full resize-none rounded-lg border-2 border-white/10 bg-[#0B1327]/70 p-3 sm:p-4 text-sm sm:text-base text-white placeholder-gray-500 focus:border-blue-400 focus:outline-none"
               />
-              <p className="text-sm text-gray-400 mt-2">
+              <p className="text-xs sm:text-sm text-gray-400 mt-2">
                 {currentAnswer.length} caratteri
               </p>
             </div>
@@ -137,17 +139,18 @@ export const Quiz: React.FC<QuizProps> = ({ questions, onSubmit, isSubmitting = 
       </Card>
 
       {/* Navigation Buttons */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
         <Button
           onClick={handlePrevious}
           disabled={isFirstQuestion}
           variant="secondary"
-          className="rounded-xl border border-white/10 bg-white/5 px-5 py-2 text-sm font-semibold text-gray-100 hover:border-blue-400/40 hover:bg-blue-500/10"
+          className="order-2 sm:order-1 rounded-xl border border-white/10 bg-white/5 px-4 sm:px-5 py-3 sm:py-2 text-sm sm:text-base font-semibold text-gray-100 hover:border-blue-400/40 hover:bg-blue-500/10 disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] sm:min-h-0"
         >
           ← Precedente
         </Button>
 
-        <div className="flex gap-2">
+        {/* Question Indicators - Hidden on small mobile */}
+        <div className="hidden sm:flex order-3 gap-2 justify-center">
           {questions.map((_, index) => (
             <button
               key={index}
@@ -168,7 +171,7 @@ export const Quiz: React.FC<QuizProps> = ({ questions, onSubmit, isSubmitting = 
           <Button
             onClick={handleNext}
             disabled={!hasAnswer}
-            className="rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 px-5 py-2 font-semibold shadow-lg shadow-blue-900/40 hover:from-blue-400 hover:to-indigo-400"
+            className="order-1 sm:order-4 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 px-4 sm:px-5 py-3 sm:py-2 text-sm sm:text-base font-semibold shadow-lg shadow-blue-900/40 hover:from-blue-400 hover:to-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed disabled:from-gray-600 disabled:to-gray-700 min-h-[48px] sm:min-h-0"
           >
             Successiva →
           </Button>
@@ -176,31 +179,22 @@ export const Quiz: React.FC<QuizProps> = ({ questions, onSubmit, isSubmitting = 
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting || Object.keys(answers).length < questions.length}
-            className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-5 py-2 font-semibold shadow-lg shadow-emerald-900/40 hover:from-emerald-400 hover:to-teal-400"
+            className="order-1 sm:order-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-4 sm:px-5 py-3 sm:py-2 text-sm sm:text-base font-semibold shadow-lg shadow-emerald-900/40 hover:from-emerald-400 hover:to-teal-400 disabled:opacity-50 disabled:cursor-not-allowed disabled:from-gray-600 disabled:to-gray-700 min-h-[48px] sm:min-h-0"
           >
-            {isSubmitting ? 'Invio in corso...' : 'Invia Quiz'}
+            {isSubmitting ? 'Invio...' : 'Invia Quiz'}
           </Button>
         )}
       </div>
 
       {/* Answer Summary */}
-      <Card className="p-4 bg-[#0B1327]/70 backdrop-blur border-white/10">
-        <div className="flex items-center justify-between text-sm">
+      <Card className="p-3 sm:p-4 bg-[#0B1327]/70 backdrop-blur border-white/10">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs sm:text-sm">
           <span className="text-gray-400">
-            Risposte completate: <span className="font-semibold text-white">{Object.keys(answers).length}</span> su{' '}
+            Risposte: <span className="font-semibold text-white">{Object.keys(answers).length}</span> /{' '}
             <span className="font-semibold text-white">{questions.length}</span>
           </span>
           {Object.keys(answers).length < questions.length && (
-            <span className="flex items-center gap-1 text-amber-300">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              Alcune domande non hanno risposta
-            </span>
+            <span className="flex items-center gap-1 text-amber-300"></span>
           )}
         </div>
       </Card>
