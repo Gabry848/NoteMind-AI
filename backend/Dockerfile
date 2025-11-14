@@ -13,5 +13,5 @@ COPY . .
 # Esponi la porta usata dall'applicazione
 EXPOSE 8000
 
-# Avvia l'app come se eseguissimo `python main.py`
+# Avvia l'app come se eseguissimo `python main.   py`
 CMD ["python", "main.py"]
