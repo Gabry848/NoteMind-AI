@@ -3,6 +3,18 @@ set -Eeuo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVICE="${RAILPACK_SERVICE:-${SERVICE:-backend}}"
+PYTHON_BIN="${PYTHON_BIN:-}"
+
+if [ -z "${PYTHON_BIN}" ]; then
+  if command -v python3 >/dev/null 2>&1; then
+    PYTHON_BIN="python3"
+  elif command -v python >/dev/null 2>&1; then
+    PYTHON_BIN="python"
+  else
+    echo "[start.sh] Unable to find python interpreter" >&2
+    exit 1
+  fi
+fi
 
 log() {
   echo "[start.sh] $*"
@@ -12,11 +24,11 @@ run_backend() {
   cd "${ROOT_DIR}/backend"
 
   log "Installing backend dependencies"
-  python3 -m pip install --upgrade pip
-  python3 -m pip install --no-cache-dir -r requirements.txt
+  "${PYTHON_BIN}" -m pip install --upgrade pip
+  "${PYTHON_BIN}" -m pip install --no-cache-dir -r requirements.txt
 
   log "Starting FastAPI backend"
-  exec python3 main.py
+  exec "${PYTHON_BIN}" main.py
 }
 
 run_frontend() {
