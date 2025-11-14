@@ -5,6 +5,11 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVICE="${RAILPACK_SERVICE:-${SERVICE:-backend}}"
 PYTHON_BIN="${PYTHON_BIN:-}"
 
+# Ensure mise-installed tools (used by Railpack) are discoverable
+if [ -d /mise/shims ]; then
+  export PATH="/mise/shims:${PATH}"
+fi
+
 if [ -z "${PYTHON_BIN}" ]; then
   if command -v python3 >/dev/null 2>&1; then
     PYTHON_BIN="python3"
