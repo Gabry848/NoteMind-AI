@@ -9,16 +9,39 @@ PYTHON_BIN="${PYTHON_BIN:-}"
 if [ -d /mise/shims ]; then
   export PATH="/mise/shims:${PATH}"
 fi
+if [ -d /mise/installs ]; then
+  export PATH="/mise/installs/python/bin:${PATH}"
+fi
 
-if [ -z "${PYTHON_BIN}" ]; then
-  if command -v python3 >/dev/null 2>&1; then
-    PYTHON_BIN="python3"
-  elif command -v python >/dev/null 2>&1; then
-    PYTHON_BIN="python"
-  else
-    echo "[start.sh] Unable to find python interpreter" >&2
-    exit 1
-  fi
+find_python() {
+  local candidate
+  for candidate in \
+    "${PYTHON_BIN}" \
+    python3 \
+    python \
+    python3.12 \
+    python3.11 \
+    /mise/shims/python3 \
+    /mise/shims/python \
+    /mise/installs/python/*/bin/python3 \
+    /mise/installs/python/*/bin/python \
+    /usr/local/bin/python3 \
+    /usr/bin/python3; do
+    if [ -n "${candidate}" ] && command -v "${candidate}" >/dev/null 2>&1; then
+      PYTHON_BIN="$(command -v "${candidate}")"
+      return 0
+    fi
+    if [ -x "${candidate}" ]; then
+      PYTHON_BIN="${candidate}"
+      return 0
+    fi
+  done
+  return 1
+}
+
+if ! find_python; then
+  echo "[start.sh] Unable to find python interpreter" >&2
+  exit 1
 fi
 
 log() {
@@ -32,8 +55,8 @@ run_backend() {
   "${PYTHON_BIN}" -m pip install --upgrade pip
   "${PYTHON_BIN}" -m pip install --no-cache-dir -r requirements.txt
 
-  log "Starting FastAPI backend"
-  exec "${PYTHON_BIN}" main.py
+  log "Starting FastAPI backend via Uvicorn"
+  exec "${PYTHON_BIN}" -m uvicorn main:app --host 0.0.0.0 --port "${PORT:-8000}"
 }
 
 run_frontend() {
