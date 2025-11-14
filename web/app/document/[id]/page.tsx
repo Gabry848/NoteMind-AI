@@ -38,6 +38,7 @@ export default function DocumentPage() {
   const [isLoadingSchema, setIsLoadingSchema] = useState(false);
   const [diagramType, setDiagramType] = useState<string>("auto");
   const [detailLevel, setDetailLevel] = useState<string>("compact");
+  const [showSchemaSettings, setShowSchemaSettings] = useState(false);
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -195,57 +196,57 @@ export default function DocumentPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-2 sm:py-8">
         {/* Tabs */}
-        <div className="flex gap-4 mb-6">
+        <div className="flex gap-1 sm:gap-4 mb-3 sm:mb-6 overflow-x-auto">
           <button
             onClick={() => setActiveTab("chat")}
-            className={`px-6 py-3 rounded-lg font-medium transition-all ${
+            className={`flex-1 min-w-[80px] px-3 sm:px-6 py-3 sm:py-3 rounded-lg font-medium transition-all text-sm sm:text-base ${
               activeTab === "chat"
                 ? "bg-blue-600 text-white shadow-md"
                 : "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700"
             }`}
           >
-            💬 Chat
+            💬 <span className="hidden sm:inline">Chat</span>
           </button>
           <button
             onClick={() => {
               setActiveTab("summary");
               if (!summary) handleGenerateSummary();
             }}
-            className={`px-6 py-3 rounded-lg font-medium transition-all ${
+            className={`flex-1 min-w-[80px] px-3 sm:px-6 py-3 sm:py-3 rounded-lg font-medium transition-all text-sm sm:text-base ${
               activeTab === "summary"
                 ? "bg-blue-600 text-white shadow-md"
                 : "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700"
             }`}
           >
-            📊 Summary
+            📊 <span className="hidden sm:inline">Summary</span>
           </button>
           <button
             onClick={() => {
               setActiveTab("schema");
               if (!mermaidSchema) handleLoadSchema();
             }}
-            className={`px-6 py-3 rounded-lg font-medium transition-all ${
+            className={`flex-1 min-w-[80px] px-3 sm:px-6 py-3 sm:py-3 rounded-lg font-medium transition-all text-sm sm:text-base ${
               activeTab === "schema"
                 ? "bg-blue-600 text-white shadow-md"
                 : "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700"
             }`}
           >
-            📈 Schema
+            📈 <span className="hidden sm:inline">Schema</span>
           </button>
           <button
             onClick={() => {
               setActiveTab("content");
               if (!fileContent) handleLoadContent();
             }}
-            className={`px-6 py-3 rounded-lg font-medium transition-all ${
+            className={`flex-1 min-w-[80px] px-3 sm:px-6 py-3 sm:py-3 rounded-lg font-medium transition-all text-sm sm:text-base ${
               activeTab === "content"
                 ? "bg-blue-600 text-white shadow-md"
                 : "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700"
             }`}
           >
-            📄 Content
+            📄 <span className="hidden sm:inline">Content</span>
           </button>
         </div>
 
@@ -253,27 +254,27 @@ export default function DocumentPage() {
         {activeTab === "chat" ? (
           <div className="grid grid-cols-1 gap-6">
             {/* Chat Messages */}
-            <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-md h-[600px] flex flex-col">
+            <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-md flex flex-col" style={{ height: 'calc(100vh - 220px)' }}>
               {/* New Chat Button */}
-              <div className="border-b border-gray-700 px-4 py-2 flex justify-end">
+              <div className="border-b border-gray-700 px-2 sm:px-4 py-2 flex justify-end">
                 <Button
                   onClick={handleNewChat}
                   variant="ghost"
                   size="sm"
-                  className="text-blue-400 hover:bg-gray-700"
+                  className="text-blue-400 hover:bg-gray-700 text-sm sm:text-base px-3 sm:px-4 py-2"
                 >
-                  ➕ New Chat
+                  ➕ <span className="hidden sm:inline">New Chat</span>
                 </Button>
               </div>
               
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3 sm:space-y-4">
                 {messages.length === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="text-6xl mb-4">💬</div>
-                    <h3 className="text-xl font-semibold text-white mb-2">
+                  <div className="text-center py-8 sm:py-12">
+                    <div className="text-4xl sm:text-6xl mb-3 sm:mb-4">💬</div>
+                    <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">
                       Start a conversation
                     </h3>
-                    <p className="text-gray-400">
+                    <p className="text-sm sm:text-base text-gray-400">
                       Ask questions about your document
                     </p>
                   </div>
@@ -284,7 +285,7 @@ export default function DocumentPage() {
                 )}
                 {isLoading && (
                   <div className="flex justify-start">
-                    <div className="bg-gray-700 rounded-lg p-4">
+                    <div className="bg-gray-700 rounded-lg p-3 sm:p-4">
                       <div className="flex space-x-2">
                         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                         <div
@@ -302,7 +303,7 @@ export default function DocumentPage() {
               </div>
 
               {/* Input */}
-              <div className="border-t border-gray-700 p-4">
+              <div className="border-t border-gray-700 p-2 sm:p-4">
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -310,13 +311,14 @@ export default function DocumentPage() {
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
                     placeholder="Ask a question..."
-                    className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 text-white placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="flex-1 px-3 sm:px-4 py-3 sm:py-2 bg-gray-700 border border-gray-600 text-white placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
                     disabled={isLoading}
                   />
                   <Button
                     onClick={handleSendMessage}
                     disabled={!inputMessage.trim() || isLoading}
                     variant="primary"
+                    className="px-4 sm:px-6 py-3 text-base sm:text-base min-w-[80px]"
                   >
                     Send
                   </Button>
@@ -382,96 +384,149 @@ export default function DocumentPage() {
             )}
           </div>
         ) : activeTab === "schema" ? (
-          <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-md p-6">
+          <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-md overflow-hidden" style={{ height: 'calc(100vh - 220px)' }}>
             {mermaidSchema ? (
-              <div className="space-y-6">
-                <div className="flex flex-col gap-4">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold text-white">Document Schema</h2>
+              <div className="h-full flex flex-col">
+                {/* Header with controls */}
+                <div className="flex items-center justify-between gap-2 bg-gray-800 border-b border-gray-700 px-3 sm:px-4 py-2">
+                  <h2 className="text-base sm:text-lg font-bold text-white">Document Schema</h2>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      onClick={() => setShowSchemaSettings(true)} 
+                      variant="ghost"
+                      className="text-xs sm:text-sm px-2 sm:px-3 py-1.5"
+                    >
+                      ⚙️ Settings
+                    </Button>
                     <Button 
                       onClick={() => handleLoadSchema(true)} 
                       variant="secondary"
                       disabled={isLoadingSchema}
+                      className="text-xs sm:text-sm px-2 sm:px-3 py-1.5"
                     >
-                      {isLoadingSchema ? "Regenerating..." : "Regenerate"}
-                    </Button>
-                  </div>
-                  
-                  {/* Diagram Settings */}
-                  <div className="flex flex-wrap gap-4 items-center bg-gray-700/50 p-4 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <label className="text-sm font-medium text-gray-300">Type:</label>
-                      <select
-                        value={diagramType}
-                        onChange={(e) => setDiagramType(e.target.value)}
-                        className="px-3 py-1.5 bg-gray-700 text-white rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                      >
-                        <option value="auto">Auto</option>
-                        <option value="flowchart">Flowchart</option>
-                        <option value="mindmap">Mindmap</option>
-                        <option value="graph">Graph</option>
-                        <option value="sequence">Sequence</option>
-                      </select>
-                    </div>
-                    
-                    <div className="flex items-center gap-3">
-                      <label className="text-sm font-medium text-gray-300">Detail:</label>
-                      <select
-                        value={detailLevel}
-                        onChange={(e) => setDetailLevel(e.target.value)}
-                        className="px-3 py-1.5 bg-gray-700 text-white rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                      >
-                        <option value="compact">Compact (5-8 nodes)</option>
-                        <option value="balanced">Balanced (10-15 nodes)</option>
-                        <option value="detailed">Detailed (15-25 nodes)</option>
-                      </select>
-                    </div>
-                    
-                    <Button
-                      onClick={() => {
-                        setMermaidSchema(null);
-                        handleLoadSchema(true);
-                      }}
-                      variant="primary"
-                      className="ml-auto"
-                    >
-                      Apply Changes
+                      {isLoadingSchema ? "..." : "🔄 Regen"}
                     </Button>
                   </div>
                 </div>
                 
-                <div className="bg-gray-900 rounded-lg overflow-hidden">
+                {/* Full-width Schema */}
+                <div className="flex-1 overflow-hidden">
                   <MermaidDiagram chart={mermaidSchema} />
                 </div>
-                <details className="mt-4">
-                  <summary className="text-sm text-gray-400 cursor-pointer hover:text-gray-300">
-                    View Mermaid Code
-                  </summary>
-                  <pre className="mt-2 p-4 bg-gray-900 text-gray-300 rounded-lg text-sm overflow-x-auto">
-                    {mermaidSchema}
-                  </pre>
-                </details>
+
+                {/* Settings Modal */}
+                {showSchemaSettings && (
+                  <div 
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                    onClick={() => setShowSchemaSettings(false)}
+                  >
+                    <div 
+                      className="bg-gray-800 rounded-lg border border-gray-700 shadow-2xl max-w-md w-full p-4 sm:p-6"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg sm:text-xl font-bold text-white">Schema Settings</h3>
+                        <button
+                          onClick={() => setShowSchemaSettings(false)}
+                          className="text-gray-400 hover:text-white text-2xl leading-none"
+                        >
+                          ×
+                        </button>
+                      </div>
+
+                      <div className="space-y-4">
+                        {/* Diagram Type */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">
+                            Diagram Type
+                          </label>
+                          <select
+                            value={diagramType}
+                            onChange={(e) => setDiagramType(e.target.value)}
+                            className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="auto">Auto (Automatic detection)</option>
+                            <option value="flowchart">Flowchart (Process flow)</option>
+                            <option value="mindmap">Mindmap (Hierarchical)</option>
+                            <option value="graph">Graph (Connections)</option>
+                            <option value="sequence">Sequence (Timeline)</option>
+                          </select>
+                        </div>
+
+                        {/* Detail Level */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">
+                            Detail Level
+                          </label>
+                          <select
+                            value={detailLevel}
+                            onChange={(e) => setDetailLevel(e.target.value)}
+                            className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="compact">Compact (5-8 nodes)</option>
+                            <option value="balanced">Balanced (10-15 nodes)</option>
+                            <option value="detailed">Detailed (15-25 nodes)</option>
+                          </select>
+                        </div>
+
+                        {/* Mermaid Code Preview */}
+                        <details className="bg-gray-900 rounded-lg p-3">
+                          <summary className="text-xs sm:text-sm text-gray-400 cursor-pointer hover:text-gray-300 font-medium">
+                            View Mermaid Code
+                          </summary>
+                          <pre className="mt-2 p-2 text-gray-300 rounded text-xs overflow-x-auto max-h-40">
+                            {mermaidSchema}
+                          </pre>
+                        </details>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-2 pt-2">
+                          <Button
+                            onClick={() => {
+                              setShowSchemaSettings(false);
+                            }}
+                            variant="ghost"
+                            className="flex-1"
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              setMermaidSchema(null);
+                              handleLoadSchema(true);
+                              setShowSchemaSettings(false);
+                            }}
+                            variant="primary"
+                            className="flex-1"
+                          >
+                            Apply & Regenerate
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
-              <div className="text-center py-12">
+              <div className="flex items-center justify-center h-full">
                 {isLoadingSchema ? (
-                  <>
-                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-700 border-t-blue-500 mb-4"></div>
-                    <p className="text-gray-400">Generating schema diagram...</p>
-                  </>
+                  <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-4 border-gray-700 border-t-blue-500 mb-3 sm:mb-4"></div>
+                    <p className="text-sm sm:text-base text-gray-400">Generating schema diagram...</p>
+                  </div>
                 ) : (
-                  <>
-                    <div className="text-6xl mb-4">📈</div>
-                    <h3 className="text-xl font-semibold text-white mb-2">
+                  <div className="text-center">
+                    <div className="text-4xl sm:text-6xl mb-3 sm:mb-4">📈</div>
+                    <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">
                       No schema yet
                     </h3>
-                    <p className="text-gray-400 mb-6">
+                    <p className="text-sm sm:text-base text-gray-400 mb-4 sm:mb-6">
                       Generate a visual diagram of the document structure
                     </p>
-                    <Button onClick={() => handleLoadSchema()} variant="primary">
+                    <Button onClick={() => handleLoadSchema()} variant="primary" className="px-6 py-3">
                       Generate Schema
                     </Button>
-                  </>
+                  </div>
                 )}
               </div>
             )}
@@ -563,16 +618,16 @@ function ChatBubble({ message }: { message: ChatMessage }) {
       className={`flex ${isUser ? "justify-end" : "justify-start"}`}
     >
       <div
-        className={`max-w-[70%] rounded-lg p-4 ${
+        className={`max-w-[85%] sm:max-w-[70%] rounded-lg p-3 sm:p-4 ${
           isUser
             ? "bg-blue-600 text-white"
             : "bg-gray-700 text-gray-100"
         }`}
       >
         {isUser ? (
-          <p className="whitespace-pre-wrap">{message.content}</p>
+          <p className="whitespace-pre-wrap text-sm sm:text-base">{message.content}</p>
         ) : (
-          <div className="markdown-content">
+          <div className="markdown-content text-sm sm:text-base">
             <ReactMarkdown 
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeRaw]}
@@ -581,17 +636,17 @@ function ChatBubble({ message }: { message: ChatMessage }) {
                 ol: ({node, ...props}) => <ol className="list-decimal list-inside space-y-1 my-2" {...props} />,
                 li: ({node, ...props}) => <li className="ml-2" {...props} />,
                 p: ({node, ...props}) => <p className="my-2" {...props} />,
-                h1: ({node, ...props}) => <h1 className="text-2xl font-bold mt-4 mb-2" {...props} />,
-                h2: ({node, ...props}) => <h2 className="text-xl font-bold mt-3 mb-2" {...props} />,
-                h3: ({node, ...props}) => <h3 className="text-lg font-bold mt-3 mb-2" {...props} />,
+                h1: ({node, ...props}) => <h1 className="text-xl sm:text-2xl font-bold mt-4 mb-2" {...props} />,
+                h2: ({node, ...props}) => <h2 className="text-lg sm:text-xl font-bold mt-3 mb-2" {...props} />,
+                h3: ({node, ...props}) => <h3 className="text-base sm:text-lg font-bold mt-3 mb-2" {...props} />,
                 code: ({node, inline, ...props}: any) => 
                   inline ? 
-                    <code className="bg-gray-600 px-1 py-0.5 rounded text-sm font-mono" {...props} /> :
-                    <code className="block bg-gray-900 text-white p-3 rounded my-2 overflow-x-auto font-mono text-sm" {...props} />,
+                    <code className="bg-gray-600 px-1 py-0.5 rounded text-xs sm:text-sm font-mono" {...props} /> :
+                    <code className="block bg-gray-900 text-white p-2 sm:p-3 rounded my-2 overflow-x-auto font-mono text-xs sm:text-sm" {...props} />,
                 pre: ({node, ...props}) => <pre className="my-2" {...props} />,
                 a: ({node, ...props}) => <a className="text-blue-400 hover:underline" {...props} />,
                 blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-gray-500 pl-4 italic my-2" {...props} />,
-                table: ({node, ...props}) => <table className="border-collapse border border-gray-600 my-2" {...props} />,
+                table: ({node, ...props}) => <table className="border-collapse border border-gray-600 my-2 text-xs sm:text-sm" {...props} />,
                 th: ({node, ...props}) => <th className="border border-gray-600 px-2 py-1 bg-gray-600 font-semibold" {...props} />,
                 td: ({node, ...props}) => <td className="border border-gray-600 px-2 py-1" {...props} />,
               }}

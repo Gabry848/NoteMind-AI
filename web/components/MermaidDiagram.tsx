@@ -137,36 +137,36 @@ export default function MermaidDiagram({ chart, className = "" }: MermaidDiagram
   };
 
   return (
-    <div className={`relative bg-gray-900 rounded-lg border border-gray-700 ${className}`}>
-      {/* Zoom Controls */}
-      <div className="absolute top-4 right-4 z-10 flex gap-2 bg-gray-800 rounded-lg shadow-lg border border-gray-700 p-2">
+    <div className={`relative bg-gray-900 rounded-lg border border-gray-700 h-full ${className}`}>
+      {/* Zoom Controls - Smaller and more compact */}
+      <div className="absolute top-2 right-2 z-10 flex gap-1 bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-lg border border-gray-700 p-1">
         <button
           onClick={handleZoomOut}
-          className="px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 text-gray-200 rounded transition-colors"
+          className="w-7 h-7 text-xs bg-gray-700 hover:bg-gray-600 text-gray-200 rounded transition-colors flex items-center justify-center"
           title="Zoom Out"
         >
           −
         </button>
         <button
           onClick={handleZoomReset}
-          className="px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 text-gray-200 rounded transition-colors font-mono"
+          className="px-2 h-7 text-xs bg-gray-700 hover:bg-gray-600 text-gray-200 rounded transition-colors font-mono"
           title="Reset Zoom"
         >
           {Math.round(zoom * 100)}%
         </button>
         <button
           onClick={handleZoomIn}
-          className="px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 text-gray-200 rounded transition-colors"
+          className="w-7 h-7 text-xs bg-gray-700 hover:bg-gray-600 text-gray-200 rounded transition-colors flex items-center justify-center"
           title="Zoom In"
         >
           +
         </button>
       </div>
 
-      {/* Scrollable Container */}
+      {/* Scrollable Container - Full height */}
       <div 
         ref={scrollContainerRef}
-        className="overflow-auto max-h-[600px] p-6"
+        className="overflow-auto h-full"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -176,16 +176,25 @@ export default function MermaidDiagram({ chart, className = "" }: MermaidDiagram
           userSelect: "none",
         }}
       >
+        {/* Wrapper to ensure scroll space in all directions */}
         <div 
-          ref={containerRef} 
-          className="mermaid-container flex justify-center items-start min-h-[200px]"
-          style={{ 
-            transform: `scale(${zoom})`,
-            transformOrigin: "top center",
-            transition: isDragging ? "none" : "transform 0.2s ease",
-            pointerEvents: isDragging ? "none" : "auto",
+          className="p-4 sm:p-6 flex items-center justify-center"
+          style={{
+            minWidth: `${zoom * 100}%`,
+            minHeight: `${zoom * 100}%`,
           }}
-        />
+        >
+          <div 
+            ref={containerRef} 
+            className="mermaid-container"
+            style={{ 
+              transform: `scale(${zoom})`,
+              transformOrigin: "center center",
+              transition: isDragging ? "none" : "transform 0.2s ease",
+              pointerEvents: isDragging ? "none" : "auto",
+            }}
+          />
+        </div>
       </div>
     </div>
   );
