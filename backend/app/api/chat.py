@@ -1,16 +1,17 @@
 """
 Chat API endpoints
 """
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status
+from starlette.concurrency import run_in_threadpool
+from datetime import datetime
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.config import settings
 from app.models.user import User
 from app.models.document import Document
 from app.models.conversation import Conversation, Message
 from app.utils.dependencies import get_current_user
 from app.services.gemini_service import gemini_service
-from app.utils.background_tasks import process_chat_response
+from app.utils.background_tasks import process_chat_response_sync
 from app.schemas.chat import ChatRequest, ChatResponse, ChatMessage, ConversationResponse
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
@@ -19,7 +20,6 @@ router = APIRouter(prefix="/chat", tags=["Chat"])
 @router.post("", response_model=ChatResponse)
 async def send_message(
     chat_request: ChatRequest,
-    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -119,28 +119,46 @@ async def send_message(
 
     history = [{"role": msg.role, "content": msg.content} for msg in messages[:-1]]  # Exclude current message
 
-    # Start background task to generate AI response
+    # Generate AI response in thread pool (non-blocking)
     file_ids = [doc.gemini_file_id for doc in documents]
     is_multi = len(documents) > 1
-    
-    background_tasks.add_task(
-        process_chat_response,
-        conversation_id=conversation.id,
-        message=chat_request.message,
-        file_ids=file_ids,
-        history=history,
-        db_url=settings.DATABASE_URL,
-        is_multi_document=is_multi,
-    )
 
-    # Return immediately with a processing message
+    try:
+        response_text, citations = await run_in_threadpool(
+            process_chat_response_sync,
+            conversation_id=conversation.id,
+            message=chat_request.message,
+            file_ids=file_ids,
+            history=history,
+            is_multi_document=is_multi,
+        )
+    except Exception as e:
+        response_text = f"Error generating response: {str(e)}"
+        citations = None
+
+    # Save AI response to database
+    ai_message = Message(
+        conversation_id=conversation.id,
+        role="assistant",
+        content=response_text,
+        citations=citations if citations else None,
+    )
+    db.add(ai_message)
+    db.commit()
+    db.refresh(ai_message)
+
+    # Update conversation timestamp
+    conversation.updated_at = datetime.utcnow()
+    db.commit()
+
+    # Return with the actual AI response
     return ChatResponse(
         conversation_id=conversation.id,
         message=ChatMessage(
             role="assistant",
-            content="Processing your request...",
-            citations=None,
-            created_at=user_message.created_at,
+            content=response_text,
+            citations=citations,
+            created_at=ai_message.created_at,
         ),
     )
 

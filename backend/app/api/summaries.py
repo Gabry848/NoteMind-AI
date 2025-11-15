@@ -1,15 +1,15 @@
 """
 Summary generation API endpoints
 """
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status
+from starlette.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.config import settings
 from app.models.user import User
 from app.models.document import Document
 from app.utils.dependencies import get_current_user
 from app.services.gemini_service import gemini_service
-from app.utils.background_tasks import process_summary_generation
+from app.utils.background_tasks import process_summary_generation_sync
 from app.schemas.document import SummaryRequest, SummaryResponse
 
 router = APIRouter(prefix="/summaries", tags=["Summaries"])
@@ -18,7 +18,6 @@ router = APIRouter(prefix="/summaries", tags=["Summaries"])
 @router.post("/generate", response_model=SummaryResponse)
 async def generate_summary(
     summary_request: SummaryRequest,
-    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -55,20 +54,36 @@ async def generate_summary(
             detail=f"Document is not ready. Status: {document.status}",
         )
 
-    # Start background task to generate summary
-    background_tasks.add_task(
-        process_summary_generation,
-        document_id=document.id,
-        file_id=document.gemini_file_id,
-        summary_type=summary_request.summary_type,
-        db_url=settings.DATABASE_URL,
-    )
+    # Generate summary in thread pool (non-blocking)
+    try:
+        summary = await run_in_threadpool(
+            process_summary_generation_sync,
+            file_id=document.gemini_file_id,
+            summary_type=summary_request.summary_type,
+        )
 
-    # Return immediately with processing status
+        # Save summary to database
+        document.summary = summary
+        db.commit()
+        db.refresh(document)
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate summary: {str(e)}",
+        )
+
+    # Get topics
+    topics = []
+    try:
+        topics = await gemini_service.extract_key_topics(document.gemini_file_id)
+    except:
+        pass
+
     return SummaryResponse(
         document_id=document.id,
-        summary="Generating summary in background...",
-        topics=[],
+        summary=summary,
+        topics=topics,
     )
 
 

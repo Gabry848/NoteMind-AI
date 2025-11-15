@@ -115,6 +115,61 @@ async def process_chat_response(
         db.close()
 
 
+def process_chat_response_sync(
+    conversation_id: int,
+    message: str,
+    file_ids: list[str],
+    history: list[dict],
+    is_multi_document: bool = False,
+):
+    """
+    Synchronous version of process_chat_response that returns the response directly
+
+    Args:
+        conversation_id: Conversation ID
+        message: User message
+        file_ids: List of Gemini file IDs
+        history: Conversation history
+        is_multi_document: Whether to use multi-document chat
+
+    Returns:
+        Tuple of (response_text, citations)
+    """
+    import asyncio
+
+    try:
+        # Get or create event loop for async operations
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        # Get AI response
+        if is_multi_document:
+            response_text, citations = loop.run_until_complete(
+                gemini_service.chat_with_documents(
+                    query=message,
+                    file_ids=file_ids,
+                    conversation_history=history,
+                )
+            )
+        else:
+            response_text, citations = loop.run_until_complete(
+                gemini_service.chat_with_document(
+                    query=message,
+                    file_id=file_ids[0],
+                    conversation_history=history,
+                )
+            )
+
+        return response_text, citations
+
+    except Exception as e:
+        print(f"Error generating chat response for conversation {conversation_id}: {str(e)}")
+        raise
+
+
 async def process_summary_generation(
     document_id: int,
     file_id: str,
@@ -159,6 +214,45 @@ async def process_summary_generation(
             db.commit()
     finally:
         db.close()
+
+
+def process_summary_generation_sync(
+    file_id: str,
+    summary_type: str,
+):
+    """
+    Synchronous version of process_summary_generation that returns the summary directly
+
+    Args:
+        file_id: Gemini file ID
+        summary_type: Type of summary to generate
+
+    Returns:
+        Generated summary text
+    """
+    import asyncio
+
+    try:
+        # Get or create event loop for async operations
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        # Generate summary
+        summary = loop.run_until_complete(
+            gemini_service.generate_summary(
+                file_id=file_id,
+                summary_type=summary_type,
+            )
+        )
+
+        return summary
+
+    except Exception as e:
+        print(f"Error generating summary: {str(e)}")
+        raise
 
 
 async def process_schema_generation(
@@ -210,6 +304,48 @@ async def process_schema_generation(
                 db.commit()
     finally:
         db.close()
+
+
+def process_schema_generation_sync(
+    file_id: str,
+    diagram_type: str,
+    detail_level: str,
+):
+    """
+    Synchronous version of process_schema_generation that returns the schema directly
+
+    Args:
+        file_id: Gemini file ID
+        diagram_type: Type of diagram
+        detail_level: Level of detail
+
+    Returns:
+        Generated Mermaid schema
+    """
+    import asyncio
+
+    try:
+        # Get or create event loop for async operations
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        # Generate schema
+        mermaid_schema = loop.run_until_complete(
+            gemini_service.generate_mermaid_schema(
+                file_id=file_id,
+                diagram_type=diagram_type,
+                detail_level=detail_level,
+            )
+        )
+
+        return mermaid_schema
+
+    except Exception as e:
+        print(f"Error generating schema: {str(e)}")
+        raise
 
 
 def process_quiz_generation(
