@@ -49,16 +49,28 @@ log() {
 }
 
 find_node() {
+  local node_version
+
   if command -v node >/dev/null 2>&1; then
-    return 0
+    node_version=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
+
+    # Check if Node version is 20 or higher
+    if [ "$node_version" -ge 20 ]; then
+      log "Node.js version $(node -v) is compatible"
+      return 0
+    fi
+
+    log "Node.js version $(node -v) is too old, upgrading to 22.x"
+  else
+    log "Node.js not found, installing 22.x"
   fi
 
-  # Install Node.js 22.x as Debian package using NodeSource repo
-  log "Installing Node.js 22.x"
+  # Install/upgrade Node.js 22.x using NodeSource repository
   curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
   apt-get install -y nodejs
 
   if command -v node >/dev/null 2>&1; then
+    log "Node.js installed successfully: $(node -v)"
     return 0
   fi
 
