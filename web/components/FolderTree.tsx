@@ -15,6 +15,7 @@ interface FolderTreeProps {
   onFolderCreate?: (parentId?: number) => void;
   onFolderEdit?: (folder: Folder) => void;
   onFolderDelete?: (folderId: number) => void;
+  onDocumentDelete?: (documentId: number) => Promise<void>;
   selectedDocumentIds?: number[];
   onDocumentToggle?: (documentId: number) => void;
   showCheckboxes?: boolean;
@@ -29,6 +30,7 @@ export function FolderTree({
   onFolderCreate,
   onFolderEdit,
   onFolderDelete,
+  onDocumentDelete,
   selectedDocumentIds = [],
   onDocumentToggle,
   showCheckboxes = false,
@@ -135,6 +137,7 @@ export function FolderTree({
                   showCheckbox={showCheckboxes}
                   onDragStart={() => handleDragStart(doc)}
                   onDragEnd={handleDragEnd}
+                  onDelete={() => onDocumentDelete?.(doc.id)}
                 />
               ))}
             </motion.div>
@@ -194,6 +197,7 @@ export function FolderTree({
                     showCheckbox={showCheckboxes}
                     onDragStart={() => handleDragStart(doc)}
                     onDragEnd={handleDragEnd}
+                    onDelete={() => onDocumentDelete?.(doc.id)}
                   />
                 ))}
               </div>
@@ -380,6 +384,7 @@ interface DocumentItemProps {
   showCheckbox: boolean;
   onDragStart?: () => void;
   onDragEnd?: () => void;
+  onDelete?: () => Promise<void>;
 }
 
 function DocumentItem({
@@ -391,6 +396,7 @@ function DocumentItem({
   showCheckbox,
   onDragStart,
   onDragEnd,
+  onDelete,
 }: DocumentItemProps) {
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
@@ -497,10 +503,15 @@ function DocumentItem({
           </button>
           <div className="h-px bg-gray-700 my-1" />
           <button
-            onClick={(e) => {
+            onClick={async (e) => {
               e.stopPropagation();
               if (confirm(`Eliminare "${document.original_filename}"?`)) {
-                // Handle delete
+                try {
+                  await onDelete?.();
+                } catch (error) {
+                  console.error("Failed to delete document:", error);
+                  alert("Errore nell'eliminazione del file");
+                }
               }
               setShowContextMenu(false);
             }}
