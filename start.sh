@@ -48,6 +48,26 @@ log() {
   echo "[start.sh] $*"
 }
 
+find_node() {
+  local candidate
+  # Try to load NVM if available
+  if [ -s "$HOME/.nvm/nvm.sh" ]; then
+    # shellcheck disable=SC1090
+    . "$HOME/.nvm/nvm.sh"
+    nvm use 22.20.0 2>/dev/null || nvm install 22.20.0
+    return 0
+  fi
+
+  # Fallback: check for nodejs in PATH
+  for candidate in node nodejs; do
+    if command -v "${candidate}" >/dev/null 2>&1; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
 run_backend() {
   cd "${ROOT_DIR}/backend"
 
@@ -71,6 +91,11 @@ run_backend() {
 
 run_frontend() {
   cd "${ROOT_DIR}/web"
+
+  if ! find_node; then
+    echo "[start.sh] Unable to find Node.js interpreter" >&2
+    exit 1
+  fi
 
   log "Installing frontend dependencies"
   npm ci
