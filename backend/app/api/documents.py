@@ -7,7 +7,9 @@ from starlette.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pathlib import Path
+import uuid
 from app.core.database import get_db
+from app.core.config import settings
 from app.models.user import User
 from app.models.document import Document
 from app.models.folder import Folder
@@ -112,6 +114,14 @@ async def upload_document(
         else:
             original_filename = file.filename
 
+        # Read file content for database storage
+        file_content = None
+        try:
+            with open(file_path, 'rb') as f:
+                file_content = f.read()
+        except Exception as e:
+            print(f"Warning: Could not read file content for database: {str(e)}")
+
         # Create document record
         document = Document(
             user_id=current_user.id,
@@ -119,6 +129,7 @@ async def upload_document(
             filename=unique_filename,
             original_filename=original_filename,
             file_path=file_path,
+            file_content=file_content,  # Store file content in database
             file_size=FileHandler.get_file_size(file_path),
             file_type=FileHandler.get_file_extension(unique_filename),
             status="processing",
@@ -212,19 +223,24 @@ async def get_document_content(
             detail="Document not found",
         )
 
-    # Try to read file content from disk first
-    content = FileHandler.read_file_content(document.file_path)
+    # Try to read file content from database first (most reliable)
+    if document.file_content:
+        file_ext = FileHandler.get_file_extension(document.filename)
+        content = FileHandler.read_file_content_from_bytes(document.file_content, file_ext)
+    else:
+        # Fallback: Try to read from disk
+        content = FileHandler.read_file_content(document.file_path)
 
-    # If file not found on disk and we have a Gemini file ID, extract from Gemini
-    # This handles cases where filesystem is temporary (like in Railway)
-    if content == "File not found" and document.gemini_file_id:
-        try:
-            content = await run_in_threadpool(
-                gemini_service.extract_document_text,
-                file_id=document.gemini_file_id,
-            )
-        except Exception as e:
-            content = f"Could not retrieve document content: {str(e)}"
+        # If file not found on disk and we have a Gemini file ID, extract from Gemini
+        # This handles cases where filesystem is temporary (like in Railway)
+        if content == "File not found" and document.gemini_file_id:
+            try:
+                content = await run_in_threadpool(
+                    gemini_service.extract_document_text,
+                    file_id=document.gemini_file_id,
+                )
+            except Exception as e:
+                content = f"Could not retrieve document content: {str(e)}"
 
     return {
         "document_id": document.id,
@@ -544,7 +560,14 @@ async def merge_documents(
         # Read and merge content from all documents
         merged_content = []
         for doc in documents:
-            content = FileHandler.read_file_content(doc.file_path)
+            # Try to read from database first (most reliable)
+            if doc.file_content:
+                file_ext = FileHandler.get_file_extension(doc.filename)
+                content = FileHandler.read_file_content_from_bytes(doc.file_content, file_ext)
+            else:
+                # Fallback: Read from disk
+                content = FileHandler.read_file_content(doc.file_path)
+
             merged_content.append(f"# {doc.original_filename}\n\n{content}\n\n")
 
         full_content = "\n---\n\n".join(merged_content)
@@ -552,19 +575,22 @@ async def merge_documents(
         # Generate filename if not provided
         if not merged_filename:
             merged_filename = f"merged_{documents[0].original_filename}"
-        
+
         # Ensure .md extension
         if not merged_filename.endswith('.md'):
             merged_filename = f"{merged_filename}.md"
 
         # Save merged content to disk
-        import uuid
         unique_filename = f"{uuid.uuid4()}.md"
-        file_path = Path("uploads") / unique_filename
+        file_path = Path(settings.UPLOAD_DIR) / unique_filename
         file_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
+        # Save to disk
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(full_content)
+
+        # Also save content as bytes for database
+        merged_content_bytes = full_content.encode('utf-8')
 
         # Create document record
         merged_document = Document(
@@ -573,6 +599,7 @@ async def merge_documents(
             filename=unique_filename,
             original_filename=merged_filename,
             file_path=str(file_path),
+            file_content=merged_content_bytes,  # Store merged content in database
             file_size=FileHandler.get_file_size(str(file_path)),
             file_type=".md",
             status="processing",

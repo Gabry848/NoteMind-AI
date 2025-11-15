@@ -95,14 +95,14 @@ class FileHandler:
         try:
             if not os.path.exists(file_path):
                 return "File not found"
-            
+
             ext = FileHandler.get_file_extension(file_path)
-            
+
             # Handle text-based files
             if ext in ['.txt', '.md', '.json', '.py', '.js', '.ts', '.tsx', '.jsx', '.css', '.html', '.xml']:
                 with open(file_path, 'r', encoding='utf-8') as f:
                     return f.read()
-            
+
             # For PDF and DOCX, we'll return a message (these require special libraries)
             elif ext == '.pdf':
                 return "PDF content preview not available. This file type requires special processing."
@@ -110,6 +110,37 @@ class FileHandler:
                 return "Word document content preview not available. This file type requires special processing."
             else:
                 return f"Content preview not available for {ext} files"
-                
+
+        except Exception as e:
+            return f"Error reading file: {str(e)}"
+
+    @staticmethod
+    def read_file_content_from_bytes(file_content: bytes, file_extension: str) -> str:
+        """
+        Read file content from bytes (database storage)
+
+        Args:
+            file_content: File content as bytes
+            file_extension: File extension (e.g., '.txt', '.md')
+
+        Returns:
+            File content as string
+        """
+        try:
+            if file_content is None:
+                return "File content not available in database"
+
+            # Handle text-based files
+            if file_extension in ['.txt', '.md', '.json', '.py', '.js', '.ts', '.tsx', '.jsx', '.css', '.html', '.xml']:
+                return file_content.decode('utf-8')
+
+            # For PDF and DOCX, we'll return a message
+            elif file_extension == '.pdf':
+                return "PDF content preview not available. This file type requires special processing."
+            elif file_extension in ['.doc', '.docx']:
+                return "Word document content preview not available. This file type requires special processing."
+            else:
+                return f"Content preview not available for {file_extension} files"
+
         except Exception as e:
             return f"Error reading file: {str(e)}"

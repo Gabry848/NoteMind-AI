@@ -1,7 +1,7 @@
 """
 Document model
 """
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, LargeBinary
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.core.database import Base
@@ -18,6 +18,7 @@ class Document(Base):
     filename = Column(String, nullable=False)
     original_filename = Column(String, nullable=False)
     file_path = Column(String, nullable=False)
+    file_content = Column(LargeBinary, nullable=True)  # Store file content in database
     file_size = Column(Integer, nullable=False)
     file_type = Column(String, nullable=False)
     gemini_file_id = Column(String, nullable=True)  # Gemini API file ID
