@@ -2,12 +2,11 @@
   "$schema": "https://schema.railpack.com",
   "provider": "shell",
   "packages": {
-    "python": "3.11",
-    "node": "22.20.0"
+    "python": "3.11"
   },
   "deploy": {
     "inputs": ["..."],
-    "aptPackages": ["python3", "python3-pip", "python3.11-venv", "npm"],
+    "aptPackages": ["python3", "python3-pip", "python3.11-venv", "npm", "node@22.20.0"],
     "startCommand": "./start.sh"
   }
 }
