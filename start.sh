@@ -94,6 +94,11 @@ run_backend() {
   "${VENV_PYTHON}" -m pip install --upgrade pip
   "${VENV_PYTHON}" -m pip install --no-cache-dir -r requirements.txt
 
+  log "Running database migrations"
+  "${VENV_PYTHON}" run_migrations.py || {
+    log "Warning: Migration execution encountered issues, but continuing startup"
+  }
+
   log "Starting FastAPI backend via Uvicorn"
   exec "${VENV_PYTHON}" -m uvicorn main:app --host 0.0.0.0 --port "${PORT:-8000}"
 }
