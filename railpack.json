@@ -6,7 +6,7 @@
   },
   "deploy": {
     "inputs": ["..."],
-    "aptPackages": ["python3", "python3-pip", "python3.11-venv", "npm", "node@22.20.0"],
+    "aptPackages": ["python3", "python3-pip", "python3.11-venv", "npm", "node"],
     "startCommand": "./start.sh"
   }
 }
