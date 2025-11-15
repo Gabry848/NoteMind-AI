@@ -42,6 +42,31 @@ router = APIRouter(prefix="/quiz", tags=["Quiz"])
 quiz_storage = {}
 
 
+def convert_questions_to_dict(questions):
+    """
+    Convert quiz questions to JSON-serializable format.
+    Handles both Pydantic models and plain dicts.
+    """
+    result = []
+    for q in questions:
+        # Convert Pydantic model to dict if needed
+        if hasattr(q, 'dict'):
+            q_dict = q.dict()
+        elif hasattr(q, '__dict__'):
+            q_dict = dict(q)
+        else:
+            q_dict = q
+
+        # Convert options to dicts if they're Pydantic models
+        if "options" in q_dict and isinstance(q_dict["options"], list):
+            q_dict["options"] = [
+                opt.dict() if hasattr(opt, 'dict') else opt
+                for opt in q_dict["options"]
+            ]
+        result.append(q_dict)
+    return result
+
+
 @router.post("/generate", response_model=QuizResponse)
 async def generate_quiz(
     quiz_request: QuizCreateRequest,
@@ -280,7 +305,7 @@ async def submit_quiz(
             total_questions=len(corrections),
             correct_answers=correct_count,
             score_percentage=round(score_percentage, 2),
-            questions_data=json.dumps([q for q in quiz_data["questions"]]),
+            questions_data=json.dumps(convert_questions_to_dict(quiz_data["questions"])),
             corrections_data=json.dumps([corr.dict() for corr in corrections]),
             overall_feedback=correction_data.get("overall_feedback", ""),
             completed_at=datetime.utcnow(),
@@ -656,15 +681,15 @@ async def share_quiz(
         difficulty = result.difficulty
     else:
         quiz_data = quiz_storage[quiz_id]
-        
+
         if quiz_data["user_id"] != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to share this quiz",
             )
-        
-        questions_data = json.dumps(quiz_data["questions"])
-        correct_answers_data = json.dumps(quiz_data["questions"])
+
+        questions_data = json.dumps(convert_questions_to_dict(quiz_data["questions"]))
+        correct_answers_data = json.dumps(convert_questions_to_dict(quiz_data["questions"]))
         question_count = len(quiz_data["questions"])
         question_type = quiz_data["question_type"]
         difficulty = quiz_data["difficulty"]
