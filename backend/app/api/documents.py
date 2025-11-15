@@ -212,8 +212,19 @@ async def get_document_content(
             detail="Document not found",
         )
 
-    # Read file content
+    # Try to read file content from disk first
     content = FileHandler.read_file_content(document.file_path)
+
+    # If file not found on disk and we have a Gemini file ID, extract from Gemini
+    # This handles cases where filesystem is temporary (like in Railway)
+    if content == "File not found" and document.gemini_file_id:
+        try:
+            content = await run_in_threadpool(
+                gemini_service.extract_document_text,
+                file_id=document.gemini_file_id,
+            )
+        except Exception as e:
+            content = f"Could not retrieve document content: {str(e)}"
 
     return {
         "document_id": document.id,

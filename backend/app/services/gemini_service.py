@@ -290,6 +290,37 @@ Return only the topics as a comma-separated list, nothing else."""
             print(f"Failed to extract key topics: {str(e)}")
             return []
 
+    async def extract_document_text(self, file_id: str) -> str:
+        """
+        Extract plain text content from a document using Gemini
+
+        Args:
+            file_id: Gemini file ID
+
+        Returns:
+            Extracted document text
+        """
+        try:
+            file = genai.get_file(name=file_id)
+
+            prompt = """Extract and return the complete text content of this document.
+Keep all formatting and structure as close to the original as possible.
+Return only the text content, nothing else."""
+
+            response = self.model.generate_content(
+                [prompt, file],
+                generation_config=genai.GenerationConfig(
+                    temperature=0.1,
+                    max_output_tokens=8192,
+                ),
+            )
+
+            return response.text
+
+        except Exception as e:
+            print(f"Failed to extract document text: {str(e)}")
+            raise Exception(f"Failed to extract document text: {str(e)}")
+
     async def generate_mermaid_schema(
         self, 
         file_id: str,
