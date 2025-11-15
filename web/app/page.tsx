@@ -46,7 +46,18 @@ export default function Home() {
             </h1>
             <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">Beta</span>
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-4 items-center">
+            <a
+              href="https://github.com/Gabry848/NoteMind-AI"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-gray-300 hover:text-white transition-colors"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
+              </svg>
+              <span className="hidden sm:inline font-medium">GitHub</span>
+            </a>
             <Link href="/login">
               <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-gray-800">
                 Login
@@ -273,6 +284,81 @@ export default function Home() {
                 Ho già un Account
               </Button>
             </Link>
+          </div>
+        </motion.div>
+
+        {/* GitHub Contribution Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.3 }}
+          className="mt-24 mb-24"
+        >
+          <div className="bg-gradient-to-r from-gray-800/50 via-gray-800/30 to-gray-800/50 backdrop-blur-sm rounded-3xl border border-gray-700/50 p-12 overflow-hidden relative"
+          >
+            {/* Decorative elements */}
+            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-l from-blue-500/10 to-transparent rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-r from-purple-500/10 to-transparent rounded-full blur-3xl" />
+
+            <div className="relative z-10">
+              <div className="flex items-center justify-center mb-6">
+                <svg className="w-12 h-12 text-gray-300" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
+                </svg>
+              </div>
+
+              <h3 className="text-3xl font-bold text-center text-white mb-4">
+                ❤️ Supporta il Progetto
+              </h3>
+
+              <p className="text-center text-gray-300 text-lg mb-8 max-w-2xl mx-auto">
+                Ama NoteMind AI? Dai una stella su GitHub e aiutaci a migliorare! Il tuo supporto ci motiva a sviluppare nuove features e migliorare costantemente.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+                <a
+                  href="https://github.com/Gabry848/NoteMind-AI"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    className="min-w-[220px] bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-blue-500/50 transition-all duration-300"
+                  >
+                    ⭐ Dai una Stella
+                  </Button>
+                </a>
+                <a
+                  href="https://github.com/Gabry848/NoteMind-AI"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    className="min-w-[220px] bg-gray-800/60 hover:bg-gray-700/60 border border-gray-700 text-white backdrop-blur-sm"
+                  >
+                    🔀 Contribuisci
+                  </Button>
+                </a>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
+                <div className="text-center p-4 rounded-lg bg-gray-800/30 border border-gray-700/30">
+                  <div className="text-2xl font-bold text-blue-400 mb-1">Open Source</div>
+                  <p className="text-sm text-gray-400">Completamente open source e gratuito</p>
+                </div>
+                <div className="text-center p-4 rounded-lg bg-gray-800/30 border border-gray-700/30">
+                  <div className="text-2xl font-bold text-purple-400 mb-1">Attivo</div>
+                  <p className="text-sm text-gray-400">Sviluppo continuo e aggiornamenti regolari</p>
+                </div>
+                <div className="text-center p-4 rounded-lg bg-gray-800/30 border border-gray-700/30">
+                  <div className="text-2xl font-bold text-pink-400 mb-1">Comunità</div>
+                  <p className="text-sm text-gray-400">Unisciti alla comunità di sviluppatori</p>
+                </div>
+              </div>
+            </div>
           </div>
         </motion.div>
 
