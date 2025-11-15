@@ -410,10 +410,12 @@ export default function MultiChatPage() {
                           h2: (props) => <h2 className="text-xl font-bold text-white mt-3 mb-2" {...props} />,
                           h3: (props) => <h3 className="text-lg font-bold text-white mt-3 mb-2" {...props} />,
                           p: (props) => <p className="text-gray-300 my-2 leading-relaxed" {...props} />,
-                          code: ({inline, ...props}) => 
-                            inline ? 
-                              <code className="bg-gray-700 px-1.5 py-0.5 rounded text-sm font-mono" {...props} /> :
-                              <code className="block bg-gray-900 text-white p-3 rounded my-2 overflow-x-auto font-mono text-sm" {...props} />,
+                          code: (props) => {
+                            const { inline, ...rest } = props as React.HTMLAttributes<HTMLElement> & { inline?: boolean };
+                            return inline ? 
+                              <code className="bg-gray-700 px-1.5 py-0.5 rounded text-sm font-mono" {...rest} /> :
+                              <code className="block bg-gray-900 text-white p-3 rounded my-2 overflow-x-auto font-mono text-sm" {...rest} />;
+                          },
                           pre: (props) => <pre className="my-2" {...props} />,
                           ul: (props) => <ul className="list-disc list-inside space-y-1 my-2" {...props} />,
                           ol: (props) => <ol className="list-decimal list-inside space-y-1 my-2" {...props} />,
@@ -470,10 +472,12 @@ function ChatMessageBubble({ message }: { message: ChatMessage }) {
                 h1: (props) => <h1 className="text-xl font-bold mt-3 mb-2" {...props} />,
                 h2: (props) => <h2 className="text-lg font-bold mt-3 mb-2" {...props} />,
                 h3: (props) => <h3 className="text-base font-bold mt-2 mb-1" {...props} />,
-                code: ({inline, ...props}) => 
-                  inline ? 
-                    <code className="bg-gray-700 px-1.5 py-0.5 rounded text-sm font-mono" {...props} /> :
-                    <code className="block bg-gray-900 text-white p-3 rounded my-2 overflow-x-auto font-mono text-sm" {...props} />,
+                code: (props) => {
+                  const { inline, ...rest } = props as React.HTMLAttributes<HTMLElement> & { inline?: boolean };
+                  return inline ? 
+                    <code className="bg-gray-700 px-1.5 py-0.5 rounded text-sm font-mono" {...rest} /> :
+                    <code className="block bg-gray-900 text-white p-3 rounded my-2 overflow-x-auto font-mono text-sm" {...rest} />;
+                },
                 pre: (props) => <pre className="my-2" {...props} />,
                 a: (props) => <a className="text-blue-400 hover:underline" {...props} />,
                 blockquote: (props) => <blockquote className="border-l-4 border-gray-600 pl-3 italic my-2" {...props} />,
