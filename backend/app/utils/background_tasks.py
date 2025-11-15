@@ -212,7 +212,7 @@ async def process_schema_generation(
         db.close()
 
 
-async def process_quiz_generation(
+def process_quiz_generation(
     quiz_id: str,
     file_ids: list[str],
     question_count: int,
@@ -224,7 +224,7 @@ async def process_quiz_generation(
     quiz_storage: dict,
 ):
     """
-    Background task to generate quiz questions
+    Background task to generate quiz questions (synchronous)
 
     Args:
         quiz_id: Quiz ID
@@ -237,16 +237,26 @@ async def process_quiz_generation(
         document_ids: List of document IDs
         quiz_storage: Shared quiz storage dictionary
     """
+    import asyncio
+    from datetime import datetime
+
     try:
-        from datetime import datetime
-        
+        # Get or create event loop for async operations
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
         # Generate quiz using Gemini
-        quiz_data = await gemini_service.generate_quiz(
-            file_ids=file_ids,
-            question_count=question_count,
-            question_type=question_type,
-            difficulty=difficulty,
-            language=language,
+        quiz_data = loop.run_until_complete(
+            gemini_service.generate_quiz(
+                file_ids=file_ids,
+                question_count=question_count,
+                question_type=question_type,
+                difficulty=difficulty,
+                language=language,
+            )
         )
 
         # Update quiz storage with generated questions

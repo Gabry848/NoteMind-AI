@@ -3,6 +3,7 @@ Quiz API endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from fastapi.responses import Response
+from starlette.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from typing import List, Optional
@@ -27,6 +28,7 @@ from app.schemas.quiz import (
     QuizSubmission,
     QuizCorrectionResponse,
     QuizQuestion,
+    QuizOption,
     QuestionCorrection,
     QuizResultResponse,
     SharedQuizCreate,
@@ -43,7 +45,6 @@ quiz_storage = {}
 @router.post("/generate", response_model=QuizResponse)
 async def generate_quiz(
     quiz_request: QuizCreateRequest,
-    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -85,26 +86,13 @@ async def generate_quiz(
     # Generate quiz ID
     quiz_id = str(uuid.uuid4())
     file_ids = [doc.gemini_file_id for doc in documents]
-    
+
     # Use provided language or user's preferred language
     quiz_language = quiz_request.language or current_user.preferred_language
-    
-    # Create placeholder quiz data in storage
     created_at = datetime.utcnow()
-    quiz_storage[quiz_id] = {
-        "document_ids": quiz_request.document_ids,
-        "file_ids": file_ids,
-        "questions": [],
-        "question_count": quiz_request.question_count,
-        "question_type": quiz_request.question_type,
-        "difficulty": quiz_request.difficulty,
-        "user_id": current_user.id,
-        "created_at": created_at,
-        "status": "generating",
-    }
-    
-    # Start background task to generate quiz
-    background_tasks.add_task(
+
+    # Run quiz generation in a thread pool to avoid blocking
+    await run_in_threadpool(
         process_quiz_generation,
         quiz_id=quiz_id,
         file_ids=file_ids,
@@ -116,20 +104,31 @@ async def generate_quiz(
         document_ids=quiz_request.document_ids,
         quiz_storage=quiz_storage,
     )
-    
-    # Return immediately with placeholder
-    placeholder_question = QuizQuestion(
-        id="placeholder",
-        question="Generating quiz questions...",
-        type="multiple_choice",
-        options=["Please wait", "Quiz is being generated", "Refresh to see questions", "Processing..."]
-    )
-    
+
+    # Get the generated questions from storage
+    quiz_data = quiz_storage.get(quiz_id, {})
+    questions = quiz_data.get("questions", [])
+
+    # Convert question dicts to QuizQuestion objects
+    quiz_questions = []
+    for q in questions:
+        # Handle both QuizOption objects and dicts
+        if "options" in q and q["type"] == "multiple_choice":
+            options = []
+            for opt in q["options"]:
+                if isinstance(opt, dict):
+                    options.append(QuizOption(**opt))
+                else:
+                    options.append(opt)
+            q["options"] = options
+
+        quiz_questions.append(QuizQuestion(**q))
+
     return QuizResponse(
         quiz_id=quiz_id,
         document_ids=quiz_request.document_ids,
-        questions=[placeholder_question],
-        question_count=quiz_request.question_count,
+        questions=quiz_questions,
+        question_count=len(quiz_questions),
         question_type=quiz_request.question_type,
         difficulty=quiz_request.difficulty,
         created_at=created_at,
