@@ -3,7 +3,7 @@
   "provider": "shell",
   "packages": {
     "python": "3.11",
-    "node": "22"
+    "node": "22.20.0"
   },
   "deploy": {
     "inputs": ["..."],
