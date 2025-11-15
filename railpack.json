@@ -3,8 +3,7 @@
   "provider": "shell",
   "packages": {
     "python": "3.13",
-    "node": "18",
-    "nvm": "0.40.3" 
+    "node": "18"
   },
   "deploy": {
     "inputs": ["..."],

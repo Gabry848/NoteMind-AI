@@ -49,21 +49,18 @@ log() {
 }
 
 find_node() {
-  local candidate
-  # Try to load NVM if available
-  if [ -s "$HOME/.nvm/nvm.sh" ]; then
-    # shellcheck disable=SC1090
-    . "$HOME/.nvm/nvm.sh"
-    nvm use 22.20.0 2>/dev/null || nvm install 22.20.0
+  if command -v node >/dev/null 2>&1; then
     return 0
   fi
 
-  # Fallback: check for nodejs in PATH
-  for candidate in node nodejs; do
-    if command -v "${candidate}" >/dev/null 2>&1; then
-      return 0
-    fi
-  done
+  # Install Node.js 22.x as Debian package using NodeSource repo
+  log "Installing Node.js 22.x"
+  curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+  apt-get install -y nodejs
+
+  if command -v node >/dev/null 2>&1; then
+    return 0
+  fi
 
   return 1
 }
