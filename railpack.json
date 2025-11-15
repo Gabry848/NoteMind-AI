@@ -7,7 +7,7 @@
   },
   "deploy": {
     "inputs": ["..."],
-    "aptPackages": ["python3", "python3-pip", "python3.11-venv"],
+    "aptPackages": ["python3", "python3-pip", "python3.11-venv", "npm@10.9.2"],
     "startCommand": "./start.sh"
   }
 }
