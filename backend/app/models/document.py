@@ -27,6 +27,8 @@ class Document(Base):
     error_message = Column(Text, nullable=True)
     summary = Column(Text, nullable=True)
     mermaid_schema = Column(Text, nullable=True)  # Mermaid diagram schema
+    media_duration = Column(Integer, nullable=True)  # Duration in seconds for audio/video
+    transcript_content = Column(Text, nullable=True)  # Transcription for media files
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

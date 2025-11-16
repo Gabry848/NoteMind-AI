@@ -16,6 +16,7 @@ import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { Card } from "@/components/Card";
 import MermaidDiagram from "@/components/MermaidDiagram";
+import { MediaPlayer } from "@/components/MediaPlayer";
 import type { ChatMessage, SummaryResponse } from "@/types";
 
 export default function DocumentPage() {
@@ -533,10 +534,71 @@ export default function DocumentPage() {
           </div>
         ) : (
           <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-md p-6">
-            {fileContent ? (
-              <div className="prose prose-invert max-w-none">
-                {selectedDocument.file_type === "text/markdown" || 
-                 selectedDocument.original_filename.endsWith('.md') ? (
+            {fileContent || selectedDocument.transcript_content ? (
+              <>
+                {/* Media Player for Audio/Video files */}
+                {['.mp3', '.wav', '.m4a', '.ogg', '.flac', '.mp4', '.avi', '.mov', '.webm', '.mkv'].includes(selectedDocument.file_type) && (
+                  <div className="mb-6">
+                    <MediaPlayer
+                      fileUrl={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/documents/${selectedDocument.id}/download`}
+                      fileName={selectedDocument.original_filename}
+                      fileType={selectedDocument.file_type}
+                      duration={selectedDocument.media_duration}
+                    />
+                  </div>
+                )}
+
+                {/* Display transcript or content */}
+                {selectedDocument.transcript_content && (
+                  <div className="mb-6">
+                    <h3 className="text-xl font-bold text-white mb-4 border-b border-gray-700 pb-2">
+                      📝 Transcription
+                    </h3>
+                    <div className="prose prose-invert max-w-none">
+                      <div className="markdown-content">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          rehypePlugins={[rehypeRaw]}
+                          components={{
+                            h1: ({node, ...props}) => <h1 className="text-4xl font-bold text-white mt-6 mb-4" {...props} />,
+                            h2: ({node, ...props}) => <h2 className="text-3xl font-bold text-white mt-5 mb-3" {...props} />,
+                            h3: ({node, ...props}) => <h3 className="text-2xl font-bold text-white mt-4 mb-2" {...props} />,
+                            h4: ({node, ...props}) => <h4 className="text-xl font-bold text-white mt-3 mb-2" {...props} />,
+                            h5: ({node, ...props}) => <h5 className="text-lg font-bold text-white mt-3 mb-2" {...props} />,
+                            h6: ({node, ...props}) => <h6 className="text-base font-bold text-white mt-2 mb-1" {...props} />,
+                            p: ({node, ...props}) => <p className="text-gray-300 my-3 leading-relaxed" {...props} />,
+                            ul: ({node, ...props}) => <ul className="list-disc list-inside space-y-2 my-4 text-gray-300" {...props} />,
+                            ol: ({node, ...props}) => <ol className="list-decimal list-inside space-y-2 my-4 text-gray-300" {...props} />,
+                            li: ({node, ...props}) => <li className="ml-4" {...props} />,
+                            code: ({node, inline, ...props}: any) =>
+                              inline ?
+                                <code className="bg-gray-900 text-blue-400 px-2 py-1 rounded text-sm font-mono" {...props} /> :
+                                <code className="block bg-gray-900 text-gray-100 p-4 rounded-lg my-4 overflow-x-auto font-mono text-sm leading-relaxed" {...props} />,
+                            pre: ({node, ...props}) => <pre className="my-4 rounded-lg overflow-hidden" {...props} />,
+                            a: ({node, ...props}) => <a className="text-blue-400 hover:text-blue-300 underline" {...props} />,
+                            blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-blue-500 pl-4 italic my-4 text-gray-400" {...props} />,
+                            table: ({node, ...props}) => <div className="overflow-x-auto my-4"><table className="min-w-full border-collapse border border-gray-600" {...props} /></div>,
+                            thead: ({node, ...props}) => <thead className="bg-gray-700" {...props} />,
+                            th: ({node, ...props}) => <th className="border border-gray-600 px-4 py-2 text-left font-semibold text-white" {...props} />,
+                            td: ({node, ...props}) => <td className="border border-gray-600 px-4 py-2 text-gray-300" {...props} />,
+                            hr: ({node, ...props}) => <hr className="border-gray-600 my-6" {...props} />,
+                            strong: ({node, ...props}) => <strong className="font-bold text-white" {...props} />,
+                            em: ({node, ...props}) => <em className="italic text-gray-300" {...props} />,
+                            img: ({node, ...props}) => <img className="max-w-full h-auto rounded-lg my-4" {...props} />,
+                          }}
+                        >
+                          {selectedDocument.transcript_content}
+                        </ReactMarkdown>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Regular file content */}
+                {fileContent && !selectedDocument.transcript_content && (
+                  <div className="prose prose-invert max-w-none">
+                    {selectedDocument.file_type === "text/markdown" ||
+                     selectedDocument.original_filename.endsWith('.md') ? (
                   <div className="markdown-content">
                     <ReactMarkdown 
                       remarkPlugins={[remarkGfm]}
@@ -572,12 +634,14 @@ export default function DocumentPage() {
                       {fileContent}
                     </ReactMarkdown>
                   </div>
-                ) : (
-                  <pre className="text-gray-300 whitespace-pre-wrap font-mono text-sm leading-relaxed">
-                    {fileContent}
-                  </pre>
+                    ) : (
+                      <pre className="text-gray-300 whitespace-pre-wrap font-mono text-sm leading-relaxed">
+                        {fileContent}
+                      </pre>
+                    )}
+                  </div>
                 )}
-              </div>
+              </>
             ) : (
               <div className="text-center py-12">
                 {isLoadingContent ? (

@@ -19,6 +19,8 @@ class DocumentResponse(BaseModel):
     error_message: Optional[str]
     summary: Optional[str]
     mermaid_schema: Optional[str]
+    media_duration: Optional[int] = None  # Duration in seconds for audio/video
+    transcript_content: Optional[str] = None  # Transcription for media files
     created_at: datetime
     updated_at: datetime
 

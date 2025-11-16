@@ -17,6 +17,7 @@ from app.utils.dependencies import get_current_user
 from app.utils.file_handler import FileHandler
 from app.services.gemini_service import gemini_service
 from app.services.ocr_service import ocr_service
+from app.services.media_service import media_service
 from app.utils.background_tasks import process_schema_generation_sync
 from app.schemas.document import DocumentResponse, DocumentListResponse, DocumentUpdate, MermaidSchemaResponse
 
@@ -65,15 +66,16 @@ async def upload_document(
     # Check file size
     content = await file.read()
     await file.seek(0)  # Reset file pointer
-    if len(content) > 10 * 1024 * 1024:  # 10MB
+    if len(content) > 50 * 1024 * 1024:  # 50MB
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File size exceeds 10MB limit",
+            detail="File size exceeds 50MB limit",
         )
 
-    # Check if file is an image
+    # Check file type
     file_ext = FileHandler.get_file_extension(file.filename)
     is_image = file_ext in ['.jpg', '.jpeg', '.png', '.webp']
+    is_media = FileHandler.is_media_file(file.filename)
 
     try:
         # Save file to disk
@@ -111,8 +113,44 @@ async def upload_document(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail=f"Failed to process image: {str(e)}",
                 )
+
+        # Process media files (audio/video) with transcription
+        elif is_media:
+            try:
+                media_type = "audio" if FileHandler.is_audio_file(file.filename) else "video"
+                print(f"Processing {media_type} file {file.filename} with transcription...")
+
+                # Transcribe, format and get title
+                markdown_content, doc_title, duration = await media_service.process_media_to_document(file_path)
+
+                # Save markdown transcription to a new file
+                md_filename = f"{doc_title}_transcript.md"
+                md_path = Path(file_path).parent / f"{Path(unique_filename).stem}_transcript.md"
+
+                with open(md_path, 'w', encoding='utf-8') as f:
+                    f.write(markdown_content)
+
+                # Keep original media file and also save transcription
+                # We'll store the path to the transcript in the database
+                original_filename = file.filename
+                transcript_path = str(md_path)
+
+                # Store transcript content separately
+                transcript_content = markdown_content
+                media_duration_value = duration
+
+                print(f"{media_type.capitalize()} processed successfully: {md_filename}")
+
+            except Exception as e:
+                # If transcription fails, keep the file but mark it with error
+                print(f"Warning: Failed to transcribe {media_type}: {str(e)}")
+                original_filename = file.filename
+                transcript_content = None
+                media_duration_value = None
         else:
             original_filename = file.filename
+            transcript_content = None
+            media_duration_value = None
 
         # Read file content for database storage
         file_content = None
@@ -133,6 +171,8 @@ async def upload_document(
             file_size=FileHandler.get_file_size(file_path),
             file_type=FileHandler.get_file_extension(unique_filename),
             status="processing",
+            media_duration=media_duration_value if is_media else None,
+            transcript_content=transcript_content if is_media else None,
         )
 
         db.add(document)

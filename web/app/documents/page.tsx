@@ -327,9 +327,9 @@ export default function DocumentsPage() {
               className="mb-6"
             >
               <Card>
-                <FileUpload onFileSelect={handleFileSelect} acceptImages={true} />
+                <FileUpload onFileSelect={handleFileSelect} acceptImages={true} acceptMedia={true} />
                 <p className="mt-4 text-sm text-gray-400 text-center">
-                  💡 Carica una foto di un quaderno: verrà estratto il testo automaticamente tramite OCR
+                  💡 Carica documenti, immagini (OCR automatico), o file audio/video (trascrizione automatica)
                 </p>
               </Card>
             </motion.div>

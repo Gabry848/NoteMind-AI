@@ -37,8 +37,19 @@ class Settings(BaseSettings):
 
     # Upload
     UPLOAD_DIR: str = "./uploads"
-    MAX_UPLOAD_SIZE: int = 10485760  # 10MB
-    ALLOWED_EXTENSIONS: List[str] = [".pdf", ".txt", ".docx", ".json", ".md", ".py", ".js", ".ts", ".jpg", ".jpeg", ".png", ".webp"]
+    MAX_UPLOAD_SIZE: int = 52428800  # 50MB (per file multimediali)
+    ALLOWED_EXTENSIONS: List[str] = [
+        # Documenti
+        ".pdf", ".txt", ".docx", ".json", ".md",
+        # Codice
+        ".py", ".js", ".ts",
+        # Immagini
+        ".jpg", ".jpeg", ".png", ".webp",
+        # Audio
+        ".mp3", ".wav", ".m4a", ".ogg", ".flac",
+        # Video
+        ".mp4", ".avi", ".mov", ".webm", ".mkv"
+    ]
 
     class Config:
         env_file = ".env"

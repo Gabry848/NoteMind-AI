@@ -144,3 +144,45 @@ class FileHandler:
 
         except Exception as e:
             return f"Error reading file: {str(e)}"
+
+    @staticmethod
+    def is_media_file(filename: str) -> bool:
+        """
+        Check if file is audio or video
+
+        Args:
+            filename: File name or path
+
+        Returns:
+            True if file is audio or video
+        """
+        ext = FileHandler.get_file_extension(filename)
+        return ext in ['.mp3', '.wav', '.m4a', '.ogg', '.flac', '.mp4', '.avi', '.mov', '.webm', '.mkv']
+
+    @staticmethod
+    def is_audio_file(filename: str) -> bool:
+        """
+        Check if file is audio
+
+        Args:
+            filename: File name or path
+
+        Returns:
+            True if file is audio
+        """
+        ext = FileHandler.get_file_extension(filename)
+        return ext in ['.mp3', '.wav', '.m4a', '.ogg', '.flac']
+
+    @staticmethod
+    def is_video_file(filename: str) -> bool:
+        """
+        Check if file is video
+
+        Args:
+            filename: File name or path
+
+        Returns:
+            True if file is video
+        """
+        ext = FileHandler.get_file_extension(filename)
+        return ext in ['.mp4', '.avi', '.mov', '.webm', '.mkv']

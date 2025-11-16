@@ -27,6 +27,8 @@ export interface Document {
   error_message?: string;
   summary?: string;
   mermaid_schema?: string;
+  media_duration?: number;  // Duration in seconds for audio/video
+  transcript_content?: string;  // Transcription for media files
   created_at: string;
   updated_at: string;
 }

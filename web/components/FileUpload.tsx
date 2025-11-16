@@ -11,18 +11,24 @@ interface FileUploadProps {
   accept?: string;
   maxSize?: number;
   acceptImages?: boolean;
+  acceptMedia?: boolean;
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({
   onFileSelect,
   accept = ".pdf,.txt,.docx,.json,.md,.py,.js,.ts",
-  maxSize = 10 * 1024 * 1024, // 10MB
+  maxSize = 50 * 1024 * 1024, // 50MB (increased for media files)
   acceptImages = false,
+  acceptMedia = false,
 }) => {
-  // If acceptImages is true, add image formats to accept list
-  const effectiveAccept = acceptImages 
-    ? `${accept},.jpg,.jpeg,.png,.webp`
-    : accept;
+  // Build effective accept list based on flags
+  let effectiveAccept = accept;
+  if (acceptImages) {
+    effectiveAccept = `${effectiveAccept},.jpg,.jpeg,.png,.webp`;
+  }
+  if (acceptMedia) {
+    effectiveAccept = `${effectiveAccept},.mp3,.wav,.m4a,.ogg,.flac,.mp4,.avi,.mov,.webm,.mkv`;
+  }
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       if (acceptedFiles.length > 0) {
@@ -78,9 +84,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               and drop
             </p>
             <p className="text-sm text-gray-500">
-              {acceptImages 
-                ? "PDF, TXT, DOCX, MD, JPG, PNG (max 10MB)" 
-                : "PDF, TXT, DOCX, JSON, MD (max 10MB)"}
+              {acceptMedia
+                ? "Documents, Images, Audio, Video (max 50MB)"
+                : acceptImages
+                  ? "PDF, TXT, DOCX, MD, JPG, PNG (max 50MB)"
+                  : "PDF, TXT, DOCX, JSON, MD (max 50MB)"}
             </p>
           </>
         )}
