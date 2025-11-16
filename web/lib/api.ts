@@ -208,6 +208,37 @@ export const chat = {
   deleteConversation: async (conversationId: number): Promise<void> => {
     await api.delete(`/chat/${conversationId}`);
   },
+
+  exportConversation: async (conversationId: number, format: 'json' | 'markdown' | 'pdf' = 'json') => {
+    if (format === 'json') {
+      const response = await api.get(`/chat/${conversationId}/export?format=json`);
+      return response.data;
+    } else {
+      // For markdown and pdf, trigger browser download
+      const token = localStorage.getItem("token");
+      const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/chat/${conversationId}/export?format=${format}`;
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `conversation_${conversationId}.${format === 'pdf' ? 'pdf' : 'md'}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    }
+  },
 };
 
 // Summaries API

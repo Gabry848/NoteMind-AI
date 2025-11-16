@@ -40,6 +40,7 @@ export default function DocumentPage() {
   const [diagramType, setDiagramType] = useState<string>("auto");
   const [detailLevel, setDetailLevel] = useState<string>("compact");
   const [showSchemaSettings, setShowSchemaSettings] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -144,6 +145,21 @@ export default function DocumentPage() {
       console.error("Failed to load Mermaid schema:", error);
     } finally {
       setIsLoadingSchema(false);
+    }
+  };
+
+  const handleExport = async (format: 'json' | 'markdown' | 'pdf') => {
+    if (!conversationId) {
+      alert('No conversation to export');
+      return;
+    }
+
+    try {
+      await chatApi.exportConversation(conversationId, format);
+      setShowExportMenu(false);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Failed to export conversation');
     }
   };
 
@@ -256,8 +272,42 @@ export default function DocumentPage() {
           <div className="grid grid-cols-1 gap-6">
             {/* Chat Messages */}
             <div className="bg-gray-800 rounded-lg border border-gray-700 shadow-md flex flex-col" style={{ height: 'calc(100vh - 220px)' }}>
-              {/* New Chat Button */}
-              <div className="border-b border-gray-700 px-2 sm:px-4 py-2 flex justify-end">
+              {/* Chat Actions */}
+              <div className="border-b border-gray-700 px-2 sm:px-4 py-2 flex justify-end gap-2">
+                {/* Export Button with Dropdown */}
+                <div className="relative">
+                  <Button
+                    onClick={() => setShowExportMenu(!showExportMenu)}
+                    variant="ghost"
+                    size="sm"
+                    disabled={!conversationId || messages.length === 0}
+                    className="text-blue-400 hover:bg-gray-700 text-sm sm:text-base px-3 sm:px-4 py-2"
+                  >
+                    📥 <span className="hidden sm:inline">Export</span>
+                  </Button>
+                  {showExportMenu && conversationId && (
+                    <div className="absolute right-0 mt-2 w-40 bg-gray-700 rounded-lg shadow-lg border border-gray-600 z-10">
+                      <button
+                        onClick={() => handleExport('json')}
+                        className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-600 rounded-t-lg"
+                      >
+                        JSON
+                      </button>
+                      <button
+                        onClick={() => handleExport('markdown')}
+                        className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-600"
+                      >
+                        Markdown
+                      </button>
+                      <button
+                        onClick={() => handleExport('pdf')}
+                        className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-600 rounded-b-lg"
+                      >
+                        PDF
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <Button
                   onClick={handleNewChat}
                   variant="ghost"

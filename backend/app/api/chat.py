@@ -2,15 +2,20 @@
 Chat API endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import FileResponse, Response
 from starlette.concurrency import run_in_threadpool
 from datetime import datetime
 from sqlalchemy.orm import Session
+from pathlib import Path
+import tempfile
+import json
 from app.core.database import get_db
 from app.models.user import User
 from app.models.document import Document
 from app.models.conversation import Conversation, Message
 from app.utils.dependencies import get_current_user
 from app.services.gemini_service import gemini_service
+from app.services.export_service import export_service
 from app.utils.background_tasks import process_chat_response_sync
 from app.schemas.chat import ChatRequest, ChatResponse, ChatMessage, ConversationResponse
 
@@ -267,3 +272,90 @@ async def delete_conversation(
     db.commit()
 
     return None
+
+
+@router.get("/{conversation_id}/export")
+async def export_conversation(
+    conversation_id: int,
+    format: str = "json",  # json, markdown, pdf
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Export a conversation to JSON, Markdown, or PDF
+
+    Args:
+        conversation_id: Conversation ID
+        format: Export format (json, markdown, pdf)
+        current_user: Current authenticated user
+        db: Database session
+
+    Returns:
+        File download response
+    """
+    # Get conversation with messages
+    conversation = (
+        db.query(Conversation)
+        .filter(Conversation.id == conversation_id, Conversation.user_id == current_user.id)
+        .first()
+    )
+
+    if not conversation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found",
+        )
+
+    try:
+        if format == "json":
+            # Export to JSON
+            data = export_service.export_conversation_to_json(conversation)
+            content = json.dumps(data, indent=2)
+
+            return Response(
+                content=content,
+                media_type="application/json",
+                headers={
+                    "Content-Disposition": f'attachment; filename="conversation_{conversation_id}.json"'
+                },
+            )
+
+        elif format == "markdown":
+            # Export to Markdown
+            content = export_service.export_conversation_to_markdown(conversation)
+
+            return Response(
+                content=content,
+                media_type="text/markdown",
+                headers={
+                    "Content-Disposition": f'attachment; filename="conversation_{conversation_id}.md"'
+                },
+            )
+
+        elif format == "pdf":
+            # Export to PDF
+            # Create temporary file
+            with tempfile.NamedTemporaryFile(mode='wb', suffix='.pdf', delete=False) as tmp_file:
+                tmp_path = tmp_file.name
+
+            # Generate PDF
+            export_service.export_conversation_to_pdf(conversation, tmp_path)
+
+            # Return file
+            return FileResponse(
+                path=tmp_path,
+                media_type="application/pdf",
+                filename=f"conversation_{conversation_id}.pdf",
+            )
+
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid format. Must be json, markdown, or pdf",
+            )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to export conversation: {str(e)}",
+        )
