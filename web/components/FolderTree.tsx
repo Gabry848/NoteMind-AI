@@ -137,7 +137,7 @@ export function FolderTree({
                   showCheckbox={showCheckboxes}
                   onDragStart={() => handleDragStart(doc)}
                   onDragEnd={handleDragEnd}
-                  onDelete={() => onDocumentDelete?.(doc.id)}
+                  onDelete={onDocumentDelete}
                 />
               ))}
             </motion.div>
@@ -197,7 +197,7 @@ export function FolderTree({
                     showCheckbox={showCheckboxes}
                     onDragStart={() => handleDragStart(doc)}
                     onDragEnd={handleDragEnd}
-                    onDelete={() => onDocumentDelete?.(doc.id)}
+                    onDelete={onDocumentDelete}
                   />
                 ))}
               </div>
@@ -384,7 +384,7 @@ interface DocumentItemProps {
   showCheckbox: boolean;
   onDragStart?: () => void;
   onDragEnd?: () => void;
-  onDelete?: () => Promise<void>;
+  onDelete?: (documentId: number) => Promise<void>;
 }
 
 function DocumentItem({
@@ -507,7 +507,7 @@ function DocumentItem({
               e.stopPropagation();
               if (confirm(`Eliminare "${document.original_filename}"?`)) {
                 try {
-                  await onDelete?.();
+                  await onDelete?.(document.id);
                 } catch (error) {
                   console.error("Failed to delete document:", error);
                   alert("Errore nell'eliminazione del file");

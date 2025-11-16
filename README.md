@@ -407,20 +407,6 @@ For issues, questions, or suggestions:
 - Open an issue on GitHub
 - Email: your@email.com
 
-## 🗺️ Roadmap
 
-See [IMPLEMENTATION.md](IMPLEMENTATION.md) for detailed development roadmap and completed features.
-
-### Future Enhancements
-- [ ] Support for more file formats (audio, video)
-- [ ] Collaborative workspaces
-- [ ] Document sharing
-- [ ] Advanced search and filters
-- [ ] Export conversations
-- [ ] Mobile app
-- [ ] Browser extension
-- [ ] Integrations (Google Drive, Dropbox)
-
----
 
 **Made with ❤️ using Next.js, FastAPI, and Google Gemini**
