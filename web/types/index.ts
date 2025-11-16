@@ -120,3 +120,58 @@ export interface MermaidSchemaResponse {
   document_id: number;
   mermaid_schema: string;
 }
+
+// Search types
+export interface SearchFilters {
+  file_types?: string[];
+  folder_ids?: number[];
+  date_from?: string;
+  date_to?: string;
+  status?: string;
+}
+
+export interface SearchRequest {
+  query: string;
+  filters?: SearchFilters;
+  sort_by?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface DocumentSearchResult {
+  id: number;
+  filename: string;
+  original_filename: string;
+  file_type: string;
+  folder_id?: number;
+  created_at: string;
+  updated_at: string;
+  highlight?: string;
+}
+
+export interface ConversationSearchResult {
+  id: number;
+  conversation_id: number;
+  document_id?: number;
+  title: string;
+  message_content: string;
+  created_at: string;
+  highlight?: string;
+}
+
+export interface SearchResponse {
+  documents: DocumentSearchResult[];
+  conversations: ConversationSearchResult[];
+  total_documents: number;
+  total_conversations: number;
+  query: string;
+}
+
+export interface SearchSuggestion {
+  text: string;
+  type: string;
+}
+
+export interface SearchSuggestionsResponse {
+  suggestions: SearchSuggestion[];
+}

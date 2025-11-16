@@ -377,4 +377,17 @@ export const quiz = {
   },
 };
 
+// Search API
+export const search = {
+  search: async (request: import("@/types").SearchRequest): Promise<import("@/types").SearchResponse> => {
+    const response = await api.post("/search", request);
+    return response.data;
+  },
+
+  getSuggestions: async (query: string, limit: number = 5): Promise<import("@/types").SearchSuggestionsResponse> => {
+    const response = await api.get(`/search/suggestions?query=${encodeURIComponent(query)}&limit=${limit}`);
+    return response.data;
+  },
+};
+
 export default api;
