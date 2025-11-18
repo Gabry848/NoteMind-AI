@@ -12,13 +12,15 @@ import { ShortcutInput } from "@/components/ShortcutInput";
 import { useSettingsStore, prettyShortcut } from "@/store/useSettingsStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { auth } from "@/lib/api";
+import { useTranslation } from "@/contexts/LanguageContext";
 
 export default function SettingsPage() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const { t } = useTranslation();
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
-  
+
   const {
     assistantLanguage,
     shortcuts,
@@ -54,11 +56,11 @@ export default function SettingsPage() {
       setSaveMessage("");
       try {
         await auth.updateProfile({ preferred_language: newLanguage });
-        setSaveMessage("✓ Lingua salvata");
+        setSaveMessage(t("settings.language.saved"));
         setTimeout(() => setSaveMessage(""), 2000);
       } catch (error) {
         console.error("Error saving language:", error);
-        setSaveMessage("✗ Errore salvataggio");
+        setSaveMessage(t("settings.language.error"));
         setTimeout(() => setSaveMessage(""), 3000);
       } finally {
         setIsSaving(false);
@@ -79,7 +81,7 @@ export default function SettingsPage() {
               ←
             </button>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-              Impostazioni
+              {t("settings.title")}
             </h1>
           </div>
         </div>
@@ -88,9 +90,9 @@ export default function SettingsPage() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* Lingua Assistente */}
         <Card className="bg-gray-800/60">
-          <h2 className="text-xl font-semibold mb-2">Lingua dell'assistente IA</h2>
+          <h2 className="text-xl font-semibold mb-2">{t("settings.language.title")}</h2>
           <p className="text-gray-400 text-sm mb-4">
-            Scegli la lingua preferita per le risposte dell'assistente e i quiz.
+            {t("settings.language.description")}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
             <select
@@ -111,7 +113,7 @@ export default function SettingsPage() {
                   {saveMessage}
                 </span>
               ) : (
-                <>Attuale: <span className="font-mono">{assistantLanguage}</span></>
+                <>{t("settings.language.current")}: <span className="font-mono">{assistantLanguage}</span></>
               )}
             </div>
           </div>
@@ -119,49 +121,49 @@ export default function SettingsPage() {
 
         {/* Scorciatoie da tastiera */}
         <Card className="bg-gray-800/60">
-          <h2 className="text-xl font-semibold mb-2">Scorciatoie da tastiera</h2>
+          <h2 className="text-xl font-semibold mb-2">{t("settings.shortcuts.title")}</h2>
           <p className="text-gray-400 text-sm mb-4">
-            Definisci le scorciatoie. Le combinazioni sono attive in tutta l'app, ma vengono mostrate solo qui.
+            {t("settings.shortcuts.description")}
           </p>
           <div className="grid md:grid-cols-2 gap-4">
             <ShortcutInput
-              label="Apri Multi-Chat"
+              label={t("settings.shortcuts.openChat")}
               value={prettyShortcut(shortcuts.openChat)}
               onChange={(c) => setShortcut("openChat", c)}
             />
             <ShortcutInput
-              label="Apri Documenti"
+              label={t("settings.shortcuts.openDocuments")}
               value={prettyShortcut(shortcuts.openDocuments)}
               onChange={(c) => setShortcut("openDocuments", c)}
             />
             <ShortcutInput
-              label="Apri Quiz"
+              label={t("settings.shortcuts.openQuiz")}
               value={prettyShortcut(shortcuts.openQuiz)}
               onChange={(c) => setShortcut("openQuiz", c)}
             />
             <ShortcutInput
-              label="Carica/Upload"
+              label={t("settings.shortcuts.upload")}
               value={prettyShortcut(shortcuts.upload)}
               onChange={(c) => setShortcut("upload", c)}
             />
             <ShortcutInput
-              label="Mostra/Nascondi Sidebar"
+              label={t("settings.shortcuts.toggleSidebar")}
               value={prettyShortcut(shortcuts.toggleSidebar)}
               onChange={(c) => setShortcut("toggleSidebar", c)}
             />
           </div>
           <div className="mt-4 flex gap-3">
-            <Button variant="secondary" onClick={resetShortcuts}>Reset scorciatoie</Button>
+            <Button variant="secondary" onClick={resetShortcuts}>{t("settings.shortcuts.reset")}</Button>
           </div>
         </Card>
 
         {/* Altre impostazioni utili */}
         <Card className="bg-gray-800/60">
-          <h2 className="text-xl font-semibold mb-2">Preferenze interfaccia</h2>
+          <h2 className="text-xl font-semibold mb-2">{t("settings.interface.title")}</h2>
           <div className="flex items-center justify-between py-2">
             <div>
-              <div className="font-medium">Mostra suggerimenti scorciatoie in dashboard</div>
-              <div className="text-gray-400 text-sm">Consigliato: disattivo, per tenere pulita la dashboard.</div>
+              <div className="font-medium">{t("settings.interface.showShortcuts")}</div>
+              <div className="text-gray-400 text-sm">{t("settings.interface.showShortcutsDesc")}</div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -176,7 +178,7 @@ export default function SettingsPage() {
         </Card>
 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-gray-500">
-          Le impostazioni vengono salvate sul dispositivo (localStorage).
+          {t("settings.footer")}
         </motion.div>
       </div>
     </div>

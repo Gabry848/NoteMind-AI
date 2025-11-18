@@ -11,6 +11,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { useDocumentsStore } from "@/store/useDocumentsStore";
 import { Button } from "@/components/Button";
 import { useSettingsStore, isEventMatchingShortcut, prettyShortcut } from "@/store/useSettingsStore";
+import { useTranslation } from "@/contexts/LanguageContext";
 import type { Document } from "@/types";
 
 interface AnalyticsOverview {
@@ -39,6 +40,7 @@ export default function DashboardPage() {
   const { user, logout, isInitialized } = useAuthStore();
   const { documents, fetchDocuments, selectDocument, isLoading } = useDocumentsStore();
   const { shortcuts, showShortcutsHelpInDashboard } = useSettingsStore();
+  const { t } = useTranslation();
   const [showFABMenu, setShowFABMenu] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [analyticsData, setAnalyticsData] = useState<AnalyticsOverview | null>(null);
@@ -149,7 +151,7 @@ export default function DashboardPage() {
             >
               <FABMenuItem
                 icon="💬"
-                label="Start Chat"
+                label={t("dashboard.startChat")}
                 onClick={() => {
                   router.push('/multi-chat');
                   setShowFABMenu(false);
@@ -157,7 +159,7 @@ export default function DashboardPage() {
               />
               <FABMenuItem
                 icon="📁"
-                label="Browse Docs"
+                label={t("dashboard.browseDocs")}
                 onClick={() => {
                   router.push('/documents');
                   setShowFABMenu(false);
@@ -165,7 +167,7 @@ export default function DashboardPage() {
               />
               <FABMenuItem
                 icon="➕"
-                label="Upload"
+                label={t("dashboard.upload")}
                 onClick={() => {
                   router.push('/documents');
                   setShowFABMenu(false);
@@ -201,9 +203,9 @@ export default function DashboardPage() {
               <span className="text-2xl">☰</span>
             </button>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-              NoteMind AI
+              {t("dashboard.title")}
             </h1>
-            <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">Beta</span>
+            <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">{t("home.beta")}</span>
           </div>
           <div className="flex items-center gap-4">
             
@@ -219,7 +221,7 @@ export default function DashboardPage() {
                 ⚙️
               </Button>
             <Button variant="ghost" onClick={logout} className="hover:bg-red-500/10 hover:text-red-400">
-              Logout
+              {t("common.logout")}
             </Button>
 
             {/* Quick Chat Button - moved to far right */}
@@ -233,7 +235,7 @@ export default function DashboardPage() {
               className="hidden sm:flex bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-full shadow-lg hover:shadow-purple-500/50 transition-all duration-300 items-center gap-2 font-semibold text-sm"
             >
               <span className="text-lg">💬</span>
-              <span>Quick Chat</span>
+              <span>{t("dashboard.quickChat")}</span>
               {showShortcutsHelpInDashboard && (
                 <span className="text-xs opacity-75">{prettyShortcut(shortcuts.openChat)}</span>
               )}
@@ -252,7 +254,7 @@ export default function DashboardPage() {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div>
               <h2 className="text-4xl font-bold text-white mb-2 flex items-center gap-3">
-                Welcome back! 
+                {t("dashboard.welcome")}
                 <motion.span
                   animate={{ rotate: [0, 14, -8, 14, -4, 10, 0] }}
                   transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
@@ -261,7 +263,7 @@ export default function DashboardPage() {
                 </motion.span>
               </h2>
               <p className="text-lg text-gray-400">
-                Your AI-powered workspace • {new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}
+                {t("dashboard.yourWorkspace")} • {new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}
               </p>
             </div>
 
@@ -295,31 +297,31 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <StatCard
             icon="📄"
-            label="Total Documents"
+            label={t("dashboard.stats.totalDocs")}
             value={stats.total}
             color="blue"
-            trend={stats.recentUploads > 0 ? `+${stats.recentUploads} this month` : undefined}
+            trend={stats.recentUploads > 0 ? `+${stats.recentUploads} ${t("dashboard.stats.thisMonth")}` : undefined}
           />
           <StatCard
             icon="💬"
-            label="Conversations"
+            label={t("dashboard.stats.conversations")}
             value={stats.totalConversations}
             color="purple"
-            trend={stats.recentChats > 0 ? `${stats.recentChats} recent messages` : undefined}
+            trend={stats.recentChats > 0 ? `${stats.recentChats} ${t("dashboard.stats.recentMessages")}` : undefined}
           />
           <StatCard
             icon="✅"
-            label="Ready"
+            label={t("dashboard.stats.ready")}
             value={stats.ready}
             color="green"
-            trend={stats.processing > 0 ? `${stats.processing} processing` : "All ready"}
+            trend={stats.processing > 0 ? `${stats.processing} ${t("dashboard.stats.processing")}` : t("dashboard.stats.allReady")}
           />
           <StatCard
             icon="💾"
-            label="Storage"
+            label={t("dashboard.stats.storage")}
             value={`${(stats.totalSize / 1024 / 1024).toFixed(1)} MB`}
             color="blue"
-            trend={stats.total > 0 ? `${((stats.totalSize / stats.total) / 1024).toFixed(1)} KB avg` : undefined}
+            trend={stats.total > 0 ? `${((stats.totalSize / stats.total) / 1024).toFixed(1)} ${t("dashboard.stats.avgSize")}` : undefined}
           />
         </div>
 
@@ -328,38 +330,38 @@ export default function DashboardPage() {
           {/* Left Column - Quick Actions */}
           <div className="lg:col-span-2">
             <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <span>🚀</span> Quick Actions
+              <span>{t("dashboard.quickActions")}</span>
             </h3>
             <div className="grid md:grid-cols-2 gap-4">
               <ActionCard
                 icon="📁"
-                title="Browse Documents"
-                description="Manage all your documents"
-                action="Browse"
+                title={t("dashboard.actions.browse.title")}
+                description={t("dashboard.actions.browse.description")}
+                action={t("dashboard.actions.browse.action")}
                 onClick={() => router.push("/documents")}
                 gradient="from-blue-500 to-cyan-500"
               />
               <ActionCard
                 icon="💬"
-                title="Multi-Document Chat"
-                description="Chat with multiple documents"
-                action="Start Chat"
+                title={t("dashboard.actions.chat.title")}
+                description={t("dashboard.actions.chat.description")}
+                action={t("dashboard.actions.chat.action")}
                 onClick={() => router.push("/multi-chat")}
                 gradient="from-purple-500 to-pink-500"
               />
               <ActionCard
                 icon="📝"
-                title="Student Quiz"
-                description="Test your knowledge with AI quizzes"
-                action="Start Quiz"
+                title={t("dashboard.actions.quiz.title")}
+                description={t("dashboard.actions.quiz.description")}
+                action={t("dashboard.actions.quiz.action")}
                 onClick={() => router.push("/quiz")}
                 gradient="from-emerald-500 to-teal-500"
               />
               <ActionCard
                 icon="📊"
-                title="Analytics"
-                description="View insights and stats"
-                action="View"
+                title={t("dashboard.actions.analytics.title")}
+                description={t("dashboard.actions.analytics.description")}
+                action={t("dashboard.actions.analytics.action")}
                 onClick={() => router.push("/analytics")}
                 gradient="from-orange-500 to-red-500"
               />
@@ -369,45 +371,45 @@ export default function DashboardPage() {
           {/* Right Column - Activity Feed */}
           <div>
             <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <span>⚡</span> Recent Activity
+              <span>{t("dashboard.recentActivity")}</span>
             </h3>
             <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700/50 p-4 space-y-3">
               {analyticsData && analyticsData.documents.recent_uploads > 0 && (
                 <ActivityItem
                   icon="📄"
-                  title={`${analyticsData.documents.recent_uploads} documents uploaded`}
-                  time="Last 30 days"
+                  title={`${analyticsData.documents.recent_uploads} ${t("dashboard.activity.documentsUploaded")}`}
+                  time={t("dashboard.activity.last30Days")}
                   color="blue"
                 />
               )}
               {analyticsData && analyticsData.messages.recent > 0 && (
                 <ActivityItem
                   icon="💬"
-                  title={`${analyticsData.messages.recent} messages sent`}
-                  time="Last 30 days"
+                  title={`${analyticsData.messages.recent} ${t("dashboard.activity.messagesSent")}`}
+                  time={t("dashboard.activity.last30Days")}
                   color="purple"
                 />
               )}
               {analyticsData && analyticsData.documents.ready > 0 && (
                 <ActivityItem
                   icon="✅"
-                  title={`${analyticsData.documents.ready} documents ready`}
-                  time="Available now"
+                  title={`${analyticsData.documents.ready} ${t("dashboard.activity.documentsReady")}`}
+                  time={t("dashboard.activity.availableNow")}
                   color="green"
                 />
               )}
               {analyticsData && analyticsData.conversations.total > 0 && (
                 <ActivityItem
                   icon="📊"
-                  title={`${analyticsData.conversations.total} total conversations`}
-                  time="All time"
+                  title={`${analyticsData.conversations.total} ${t("dashboard.activity.totalConversations")}`}
+                  time={t("dashboard.activity.allTime")}
                   color="orange"
                 />
               )}
               {(!analyticsData || (analyticsData.documents.total === 0 && analyticsData.conversations.total === 0)) && (
                 <div className="text-center py-8 text-gray-400">
-                  <p className="text-sm">No activity yet</p>
-                  <p className="text-xs mt-2">Start by uploading a document!</p>
+                  <p className="text-sm">{t("dashboard.activity.noActivity")}</p>
+                  <p className="text-xs mt-2">{t("dashboard.activity.startUploading")}</p>
                 </div>
               )}
             </div>
@@ -417,28 +419,28 @@ export default function DashboardPage() {
         {/* Features Overview - Compact */}
         <div className="mb-8">
           <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-            <span>💡</span> What You Can Do
+            <span>{t("dashboard.whatCanDo")}</span>
           </h3>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
             <FeatureCard
               icon="🤖"
-              title="AI Analysis"
-              description="Instant summaries and insights"
+              title={t("dashboard.features.aiAnalysis.title")}
+              description={t("dashboard.features.aiAnalysis.description")}
             />
             <FeatureCard
               icon="💡"
-              title="Smart Chat"
-              description="Context-aware answers"
+              title={t("dashboard.features.smartChat.title")}
+              description={t("dashboard.features.smartChat.description")}
             />
             <FeatureCard
               icon="📊"
-              title="Organization"
-              description="Folders and drag & drop"
+              title={t("dashboard.features.organization.title")}
+              description={t("dashboard.features.organization.description")}
             />
             <FeatureCard
               icon="🔍"
-              title="Search"
-              description="Find anything instantly"
+              title={t("dashboard.features.search.title")}
+              description={t("dashboard.features.search.description")}
             />
           </div>
         </div>
@@ -448,14 +450,14 @@ export default function DashboardPage() {
           <div>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                <span>📚</span> Recent Documents
+                <span>{t("dashboard.recentDocuments")}</span>
               </h3>
               <Button
                 variant="ghost"
                 onClick={() => router.push("/documents")}
                 className="text-sm hover:text-blue-400"
               >
-                View All →
+                {t("dashboard.viewAll")}
               </Button>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -492,10 +494,10 @@ export default function DashboardPage() {
                 🚀
               </motion.div>
               <h3 className="text-3xl font-bold text-white mb-3">
-                Ready to get started?
+                {t("dashboard.emptyState.title")}
               </h3>
               <p className="text-gray-400 mb-8 max-w-md mx-auto">
-                Upload your first document and experience the power of AI-driven insights
+                {t("dashboard.emptyState.description")}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <Button
@@ -504,7 +506,7 @@ export default function DashboardPage() {
                   onClick={() => router.push("/documents")}
                   className="min-w-[200px]"
                 >
-                  Upload Document
+                  {t("dashboard.emptyState.uploadDoc")}
                 </Button>
                 <Button
                   variant="secondary"
@@ -512,7 +514,7 @@ export default function DashboardPage() {
                   onClick={() => router.push("/multi-chat")}
                   className="min-w-[200px]"
                 >
-                  Explore Features
+                  {t("dashboard.emptyState.exploreFeatures")}
                 </Button>
               </div>
             </div>
@@ -528,13 +530,13 @@ export default function DashboardPage() {
             className="mt-8 bg-gray-800/30 backdrop-blur-sm rounded-lg border border-gray-700/30 p-4"
           >
             <h4 className="text-sm font-semibold text-gray-400 mb-3 flex items-center gap-2">
-              <span>⌨️</span> Scorciatoie
+              <span>{t("dashboard.shortcuts.title")}</span>
             </h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-              <ShortcutItem shortcut={prettyShortcut(shortcuts.openChat)} description="Apri Chat" />
-              <ShortcutItem shortcut={prettyShortcut(shortcuts.openQuiz)} description="Apri Quiz" />
-              <ShortcutItem shortcut={prettyShortcut(shortcuts.upload)} description="Upload" />
-              <ShortcutItem shortcut={prettyShortcut(shortcuts.openDocuments)} description="Documenti" />
+              <ShortcutItem shortcut={prettyShortcut(shortcuts.openChat)} description={t("dashboard.shortcuts.openChat")} />
+              <ShortcutItem shortcut={prettyShortcut(shortcuts.openQuiz)} description={t("dashboard.shortcuts.openQuiz")} />
+              <ShortcutItem shortcut={prettyShortcut(shortcuts.upload)} description={t("dashboard.shortcuts.upload")} />
+              <ShortcutItem shortcut={prettyShortcut(shortcuts.openDocuments)} description={t("dashboard.shortcuts.documents")} />
             </div>
           </motion.div>
         )}

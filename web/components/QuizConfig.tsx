@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Card } from './Card';
 import { Button } from './Button';
 import MultiDocumentSelector from './MultiDocumentSelector';
+import { useTranslation } from '@/contexts/LanguageContext';
 
 interface QuizConfigProps {
   onStartQuiz: (config: {
@@ -16,6 +17,7 @@ interface QuizConfigProps {
 }
 
 export const QuizConfig: React.FC<QuizConfigProps> = ({ onStartQuiz, isLoading = false }) => {
+  const { t } = useTranslation();
   const [selectedDocuments, setSelectedDocuments] = useState<number[]>([]);
   const [questionCount, setQuestionCount] = useState(5);
   const [questionType, setQuestionType] = useState<'multiple_choice' | 'open_ended' | 'mixed'>('mixed');
@@ -23,7 +25,7 @@ export const QuizConfig: React.FC<QuizConfigProps> = ({ onStartQuiz, isLoading =
 
   const handleSubmit = () => {
     if (selectedDocuments.length === 0) {
-      alert('Seleziona almeno un documento');
+      alert(t("quiz.selectAtLeastOne"));
       return;
     }
 
@@ -38,16 +40,16 @@ export const QuizConfig: React.FC<QuizConfigProps> = ({ onStartQuiz, isLoading =
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="text-center space-y-2">
-        <h1 className="text-2xl sm:text-3xl font-bold text-white">Crea il Tuo Quiz</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white">{t("quiz.title")}</h1>
         <p className="text-sm sm:text-base text-gray-300">
-          Seleziona i documenti e configura il quiz per testare la tua conoscenza
+          {t("quiz.description")}
         </p>
       </div>
 
       {/* Document Selection */}
       <Card className="p-4 sm:p-6 bg-gray-800/70 backdrop-blur border-white/10 shadow-xl">
         <h2 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">
-          1. Seleziona i Documenti
+          {t("quiz.step1")}
         </h2>
         <MultiDocumentSelector
           selectedDocumentIds={selectedDocuments}
@@ -58,14 +60,14 @@ export const QuizConfig: React.FC<QuizConfigProps> = ({ onStartQuiz, isLoading =
       {/* Quiz Configuration */}
       <Card className="p-4 sm:p-6 bg-gray-800/70 backdrop-blur border-white/10 shadow-xl">
         <h2 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">
-          2. Configura il Quiz
+          {t("quiz.step2")}
         </h2>
 
         <div className="space-y-4 sm:space-y-6">
           {/* Number of Questions */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Numero di Domande: {questionCount}
+              {t("quiz.numberOfQuestions")}: {questionCount}
             </label>
             <input
               type="range"
@@ -84,7 +86,7 @@ export const QuizConfig: React.FC<QuizConfigProps> = ({ onStartQuiz, isLoading =
           {/* Question Type */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-3">
-              Tipo di Domande
+              {t("quiz.questionType")}
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
               <button
@@ -95,8 +97,8 @@ export const QuizConfig: React.FC<QuizConfigProps> = ({ onStartQuiz, isLoading =
                     : 'border-white/10 hover:border-blue-400/40 bg-white/5'
                 }`}
               >
-                <div className="font-semibold text-white mb-1 text-sm sm:text-base">Risposta Multipla</div>
-                <div className="text-xs sm:text-sm text-gray-300">Domande con opzioni A, B, C, D</div>
+                <div className="font-semibold text-white mb-1 text-sm sm:text-base">{t("quiz.types.multipleChoice.title")}</div>
+                <div className="text-xs sm:text-sm text-gray-300">{t("quiz.types.multipleChoice.description")}</div>
               </button>
 
               <button
@@ -107,8 +109,8 @@ export const QuizConfig: React.FC<QuizConfigProps> = ({ onStartQuiz, isLoading =
                     : 'border-white/10 hover:border-purple-400/40 bg-white/5'
                 }`}
               >
-                <div className="font-semibold text-white mb-1 text-sm sm:text-base">Risposta Aperta</div>
-                <div className="text-xs sm:text-sm text-gray-300">Domande che richiedono spiegazioni</div>
+                <div className="font-semibold text-white mb-1 text-sm sm:text-base">{t("quiz.types.openEnded.title")}</div>
+                <div className="text-xs sm:text-sm text-gray-300">{t("quiz.types.openEnded.description")}</div>
               </button>
 
               <button
@@ -119,8 +121,8 @@ export const QuizConfig: React.FC<QuizConfigProps> = ({ onStartQuiz, isLoading =
                     : 'border-white/10 hover:border-blue-400/40 bg-white/5'
                 }`}
               >
-                <div className="font-semibold text-white mb-1 text-sm sm:text-base">Misto</div>
-                <div className="text-xs sm:text-sm text-gray-300">Combinazione di entrambi i tipi</div>
+                <div className="font-semibold text-white mb-1 text-sm sm:text-base">{t("quiz.types.mixed.title")}</div>
+                <div className="text-xs sm:text-sm text-gray-300">{t("quiz.types.mixed.description")}</div>
               </button>
             </div>
           </div>
@@ -128,7 +130,7 @@ export const QuizConfig: React.FC<QuizConfigProps> = ({ onStartQuiz, isLoading =
           {/* Difficulty */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-3">
-              Livello di Difficoltà
+              {t("quiz.difficulty")}
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
               <button
@@ -139,8 +141,8 @@ export const QuizConfig: React.FC<QuizConfigProps> = ({ onStartQuiz, isLoading =
                     : 'border-white/10 hover:border-emerald-400/40 bg-white/5'
                 }`}
               >
-                <div className="font-semibold text-white mb-1 text-sm sm:text-base">Facile</div>
-                <div className="text-xs sm:text-sm text-gray-300">Concetti base e comprensione semplice</div>
+                <div className="font-semibold text-white mb-1 text-sm sm:text-base">{t("quiz.levels.easy.title")}</div>
+                <div className="text-xs sm:text-sm text-gray-300">{t("quiz.levels.easy.description")}</div>
               </button>
 
               <button
@@ -151,8 +153,8 @@ export const QuizConfig: React.FC<QuizConfigProps> = ({ onStartQuiz, isLoading =
                     : 'border-white/10 hover:border-amber-400/40 bg-white/5'
                 }`}
               >
-                <div className="font-semibold text-white mb-1 text-sm sm:text-base">Medio</div>
-                <div className="text-xs sm:text-sm text-gray-300">Richiede comprensione e analisi</div>
+                <div className="font-semibold text-white mb-1 text-sm sm:text-base">{t("quiz.levels.medium.title")}</div>
+                <div className="text-xs sm:text-sm text-gray-300">{t("quiz.levels.medium.description")}</div>
               </button>
 
               <button
@@ -163,8 +165,8 @@ export const QuizConfig: React.FC<QuizConfigProps> = ({ onStartQuiz, isLoading =
                     : 'border-white/10 hover:border-rose-400/40 bg-white/5'
                 }`}
               >
-                <div className="font-semibold text-white mb-1 text-sm sm:text-base">Difficile</div>
-                <div className="text-xs sm:text-sm text-gray-300">Domande avanzate e approfondite</div>
+                <div className="font-semibold text-white mb-1 text-sm sm:text-base">{t("quiz.levels.hard.title")}</div>
+                <div className="text-xs sm:text-sm text-gray-300">{t("quiz.levels.hard.description")}</div>
               </button>
             </div>
           </div>
@@ -175,21 +177,21 @@ export const QuizConfig: React.FC<QuizConfigProps> = ({ onStartQuiz, isLoading =
       <Card className="p-4 sm:p-6 bg-gradient-to-r from-blue-500/15 via-indigo-500/15 to-transparent border border-blue-400/40 backdrop-blur">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="space-y-1">
-            <h3 className="font-semibold text-white text-base sm:text-lg">Pronto per Iniziare?</h3>
+            <h3 className="font-semibold text-white text-base sm:text-lg">{t("quiz.readyToStart")}</h3>
             <div className="flex flex-wrap gap-x-3 sm:gap-x-4 gap-y-1 text-xs sm:text-sm text-gray-200">
-              <span>📄 {selectedDocuments.length} document{selectedDocuments.length !== 1 ? 'i' : 'o'}</span>
-              <span>❓ {questionCount} domande</span>
+              <span>📄 {selectedDocuments.length} {selectedDocuments.length !== 1 ? t("quiz.documentsPlural") : t("quiz.documents")}</span>
+              <span>❓ {questionCount} {t("quiz.questions")}</span>
               <span>
                 📝{' '}
                 {questionType === 'multiple_choice'
-                  ? 'Risposta multipla'
+                  ? t("quiz.types.multipleChoice.title")
                   : questionType === 'open_ended'
-                  ? 'Risposta aperta'
-                  : 'Misto'}
+                  ? t("quiz.types.openEnded.title")
+                  : t("quiz.types.mixed.title")}
               </span>
               <span>
                 🎯{' '}
-                {difficulty === 'easy' ? 'Facile' : difficulty === 'medium' ? 'Medio' : 'Difficile'}
+                {difficulty === 'easy' ? t("quiz.levels.easy.title") : difficulty === 'medium' ? t("quiz.levels.medium.title") : t("quiz.levels.hard.title")}
               </span>
             </div>
           </div>
@@ -200,7 +202,7 @@ export const QuizConfig: React.FC<QuizConfigProps> = ({ onStartQuiz, isLoading =
             size="lg"
             className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 font-semibold shadow-lg shadow-blue-900/40 hover:from-blue-400 hover:to-indigo-400"
           >
-            {isLoading ? 'Creazione...' : 'Genera Quiz'}
+            {isLoading ? t("quiz.generating") : t("quiz.generate")}
           </Button>
         </div>
       </Card>

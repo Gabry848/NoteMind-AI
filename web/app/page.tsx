@@ -7,8 +7,11 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "@/components/Button";
+import { useTranslation } from "@/contexts/LanguageContext";
 
 export default function Home() {
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       {/* Animated background effect */}
@@ -42,9 +45,9 @@ export default function Home() {
         >
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-              NoteMind AI
+              {t("home.title")}
             </h1>
-            <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">Beta</span>
+            <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">{t("home.beta")}</span>
           </div>
           <div className="flex gap-4 items-center">
             <a
@@ -60,12 +63,12 @@ export default function Home() {
             </a>
             <Link href="/login">
               <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-gray-800">
-                Login
+                {t("home.login")}
               </Button>
             </Link>
             <Link href="/register">
               <Button variant="primary" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
-                Inizia Gratis
+                {t("home.startFree")}
               </Button>
             </Link>
           </div>
@@ -88,9 +91,9 @@ export default function Home() {
             transition={{ delay: 0.2 }}
             className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent leading-tight"
           >
-            Il Tuo Assistente AI
+            {t("home.hero.title")}
             <br />
-            per lo Studio
+            {t("home.hero.subtitle")}
           </motion.h2>
 
           <motion.p
@@ -99,8 +102,7 @@ export default function Home() {
             transition={{ delay: 0.3 }}
             className="text-xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed"
           >
-            Carica documenti, fai domande intelligenti e ottieni risposte precise.
-            Trasforma i tuoi appunti in conversazioni interattive con l'AI di Google Gemini.
+            {t("home.hero.description")}
           </motion.p>
 
           <motion.div
@@ -110,21 +112,21 @@ export default function Home() {
             className="flex flex-col sm:flex-row gap-4 justify-center mb-8"
           >
             <Link href="/register">
-              <Button 
-                variant="primary" 
+              <Button
+                variant="primary"
                 size="lg"
                 className="min-w-[200px] bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-blue-500/50 transition-all duration-300"
               >
-                🚀 Inizia Ora
+                🚀 {t("home.signUp")}
               </Button>
             </Link>
             <Link href="/login">
-              <Button 
-                variant="secondary" 
+              <Button
+                variant="secondary"
                 size="lg"
                 className="min-w-[200px] bg-gray-800/60 hover:bg-gray-700/60 border border-gray-700 text-white backdrop-blur-sm"
               >
-                Accedi
+                {t("home.accessAccount")}
               </Button>
             </Link>
           </motion.div>
@@ -135,7 +137,7 @@ export default function Home() {
             transition={{ delay: 0.5 }}
             className="text-sm text-gray-500"
           >
-            ✨ Gratis • Open Source • Nessuna carta di credito richiesta • Powered by Google Gemini
+            {t("home.tagline")}
           </motion.p>
         </div>
 
@@ -147,43 +149,43 @@ export default function Home() {
           className="mb-24"
         >
           <h3 className="text-3xl font-bold text-center text-white mb-12">
-            Tutto ciò di cui hai bisogno
+            {t("home.features.title")}
           </h3>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             <FeatureCard
               icon="📄"
-              title="Carica Documenti"
-              description="Supporto per PDF, DOCX, TXT, JSON, Markdown e codice. Interfaccia drag & drop intuitiva."
+              title={t("home.features.uploadDocs.title")}
+              description={t("home.features.uploadDocs.description")}
               gradient="from-blue-500 to-cyan-500"
             />
             <FeatureCard
               icon="💬"
-              title="Chat Multi-Documento"
-              description="Fai domande su più documenti contemporaneamente. L'AI trova le risposte con citazioni precise."
+              title={t("home.features.multiChat.title")}
+              description={t("home.features.multiChat.description")}
               gradient="from-purple-500 to-pink-500"
             />
             <FeatureCard
               icon="📊"
-              title="Riassunti Automatici"
-              description="Genera riassunti completi con un click. Estrai argomenti chiave e concetti principali."
+              title={t("home.features.summaries.title")}
+              description={t("home.features.summaries.description")}
               gradient="from-emerald-500 to-teal-500"
             />
             <FeatureCard
               icon="📝"
-              title="Quiz Personalizzati"
-              description="Genera quiz intelligenti dai tuoi documenti. Studia in modo più efficace e verifica la comprensione."
+              title={t("home.features.quiz.title")}
+              description={t("home.features.quiz.description")}
               gradient="from-orange-500 to-red-500"
             />
             <FeatureCard
               icon="🔍"
-              title="Ricerca Semantica"
-              description="Trova informazioni con ricerca intelligente. L'AI comprende il contesto, non solo le parole chiave."
+              title={t("home.features.search.title")}
+              description={t("home.features.search.description")}
               gradient="from-indigo-500 to-blue-500"
             />
             <FeatureCard
               icon="📁"
-              title="Organizzazione Smart"
-              description="Gestisci documenti con cartelle. Organizza il tuo workspace in modo efficiente."
+              title={t("home.features.organization.title")}
+              description={t("home.features.organization.description")}
               gradient="from-pink-500 to-rose-500"
             />
           </div>
@@ -197,25 +199,25 @@ export default function Home() {
           className="mb-24"
         >
           <h3 className="text-3xl font-bold text-center text-white mb-12">
-            Come Funziona
+            {t("home.howItWorks.title")}
           </h3>
           <div className="grid md:grid-cols-3 gap-8">
             <StepCard
               number="1"
-              title="Carica"
-              description="Trascina i tuoi documenti o caricali con un click. Elaborazione veloce e sicura."
+              title={t("home.howItWorks.step1.title")}
+              description={t("home.howItWorks.step1.description")}
               icon="📤"
             />
             <StepCard
               number="2"
-              title="Chatta"
-              description="Fai domande naturali sui tuoi documenti. L'AI risponde con precisione e citazioni."
+              title={t("home.howItWorks.step2.title")}
+              description={t("home.howItWorks.step2.description")}
               icon="💡"
             />
             <StepCard
               number="3"
-              title="Impara"
-              description="Ottieni riassunti, quiz e insights. Studia in modo più efficiente e veloce."
+              title={t("home.howItWorks.step3.title")}
+              description={t("home.howItWorks.step3.description")}
               icon="🎓"
             />
           </div>
@@ -260,28 +262,28 @@ export default function Home() {
           className="bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 backdrop-blur-sm rounded-3xl border border-gray-700/50 p-12 text-center"
         >
           <h3 className="text-4xl font-bold text-white mb-4">
-            Pronto a Iniziare?
+            {t("home.cta.title")}
           </h3>
           <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-            Unisciti a chi sta già trasformando il proprio modo di studiare con l'intelligenza artificiale.
+            {t("home.cta.description")}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/register">
-              <Button 
-                variant="primary" 
+              <Button
+                variant="primary"
                 size="lg"
                 className="min-w-[220px] bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-2xl hover:shadow-blue-500/50 transition-all duration-300"
               >
-                Inizia Gratuitamente 🚀
+                {t("home.cta.startFree")}
               </Button>
             </Link>
             <Link href="/login">
-              <Button 
-                variant="secondary" 
+              <Button
+                variant="secondary"
                 size="lg"
                 className="min-w-[220px] bg-gray-800/60 hover:bg-gray-700/60 border border-gray-700 text-white backdrop-blur-sm"
               >
-                Ho già un Account
+                {t("home.haveAccount")}
               </Button>
             </Link>
           </div>
@@ -308,11 +310,11 @@ export default function Home() {
               </div>
 
               <h3 className="text-3xl font-bold text-center text-white mb-4">
-                ❤️ Supporta il Progetto
+                {t("home.github.title")}
               </h3>
 
               <p className="text-center text-gray-300 text-lg mb-8 max-w-2xl mx-auto">
-                Ama NoteMind AI? Dai una stella su GitHub e aiutaci a migliorare! Il tuo supporto ci motiva a sviluppare nuove features e migliorare costantemente.
+                {t("home.github.description")}
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
@@ -326,7 +328,7 @@ export default function Home() {
                     size="lg"
                     className="min-w-[220px] bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-blue-500/50 transition-all duration-300"
                   >
-                    ⭐ Dai una Stella
+                    {t("home.github.giveStar")}
                   </Button>
                 </a>
                 <a
@@ -339,23 +341,23 @@ export default function Home() {
                     size="lg"
                     className="min-w-[220px] bg-gray-800/60 hover:bg-gray-700/60 border border-gray-700 text-white backdrop-blur-sm"
                   >
-                    🔀 Contribuisci
+                    {t("home.github.contribute")}
                   </Button>
                 </a>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
                 <div className="text-center p-4 rounded-lg bg-gray-800/30 border border-gray-700/30">
-                  <div className="text-2xl font-bold text-blue-400 mb-1">Open Source</div>
-                  <p className="text-sm text-gray-400">Completamente open source e gratuito</p>
+                  <div className="text-2xl font-bold text-blue-400 mb-1">{t("home.github.openSource")}</div>
+                  <p className="text-sm text-gray-400">{t("home.github.openSourceDesc")}</p>
                 </div>
                 <div className="text-center p-4 rounded-lg bg-gray-800/30 border border-gray-700/30">
-                  <div className="text-2xl font-bold text-purple-400 mb-1">Attivo</div>
-                  <p className="text-sm text-gray-400">Sviluppo continuo e aggiornamenti regolari</p>
+                  <div className="text-2xl font-bold text-purple-400 mb-1">{t("home.github.active")}</div>
+                  <p className="text-sm text-gray-400">{t("home.github.activeDesc")}</p>
                 </div>
                 <div className="text-center p-4 rounded-lg bg-gray-800/30 border border-gray-700/30">
-                  <div className="text-2xl font-bold text-pink-400 mb-1">Comunità</div>
-                  <p className="text-sm text-gray-400">Unisciti alla comunità di sviluppatori</p>
+                  <div className="text-2xl font-bold text-pink-400 mb-1">{t("home.github.community")}</div>
+                  <p className="text-sm text-gray-400">{t("home.github.communityDesc")}</p>
                 </div>
               </div>
             </div>
@@ -369,9 +371,9 @@ export default function Home() {
           transition={{ delay: 1.4 }}
           className="mt-24 pt-8 border-t border-gray-800 text-center text-gray-500 text-sm"
         >
-          <p>Made with ❤️ using Next.js, FastAPI, and Google Gemini</p>
+          <p>{t("home.footer.madeWith")}</p>
           <div className="mt-3 flex items-center justify-center gap-2">
-            <p>© 2025 NoteMind AI • Beta Version • Open Source</p>
+            <p>{t("home.footer.copyright")}</p>
             <a 
               href="https://github.com/Gabry848/NoteMind-AI" 
               target="_blank" 
