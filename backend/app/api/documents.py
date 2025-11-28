@@ -496,6 +496,120 @@ async def get_mermaid_schema(
         )
 
 
+@router.post("/generate-from-prompt", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
+async def generate_document_from_prompt(
+    prompt: str = Form(...),
+    language: str = Form("it"),
+    folder_id: Optional[int] = Form(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Generate a new document from a text prompt using AI
+
+    Args:
+        prompt: Text prompt describing the content to generate
+        language: Language for the generated content (default: it)
+        folder_id: Optional folder ID to organize document
+        current_user: Current authenticated user
+        db: Database session
+
+    Returns:
+        Created document information
+    """
+    # Validate folder if provided
+    if folder_id:
+        folder = (
+            db.query(Folder)
+            .filter(Folder.id == folder_id, Folder.user_id == current_user.id)
+            .first()
+        )
+        if not folder:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Folder not found",
+            )
+
+    try:
+        # Generate content using Gemini
+        content = await gemini_service.generate_content_from_prompt(
+            prompt=prompt,
+            language=language,
+        )
+
+        # Extract title from first heading or use prompt
+        title = prompt[:50]  # Default to first 50 chars of prompt
+        lines = content.split('\n')
+        for line in lines:
+            if line.strip().startswith('#'):
+                # Extract title from first heading
+                title = line.strip().lstrip('#').strip()
+                break
+
+        # Generate filename
+        # Remove special characters and limit length
+        safe_title = "".join(c if c.isalnum() or c.isspace() else "" for c in title)
+        safe_title = safe_title.strip()[:50]
+        if not safe_title:
+            safe_title = "generated_document"
+
+        original_filename = f"{safe_title}.md"
+        unique_filename = f"{uuid.uuid4()}.md"
+
+        # Save content to disk
+        file_path = Path(settings.UPLOAD_DIR) / unique_filename
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+
+        # Save content as bytes for database
+        content_bytes = content.encode('utf-8')
+
+        # Create document record
+        document = Document(
+            user_id=current_user.id,
+            folder_id=folder_id,
+            filename=unique_filename,
+            original_filename=original_filename,
+            file_path=str(file_path),
+            file_content=content_bytes,
+            file_size=len(content_bytes),
+            file_type=".md",
+            status="processing",
+        )
+
+        db.add(document)
+        db.commit()
+        db.refresh(document)
+
+        # Upload to Gemini API for RAG capabilities
+        try:
+            gemini_file_id = await gemini_service.upload_file(
+                file_path=str(file_path),
+                display_name=original_filename,
+            )
+
+            document.gemini_file_id = gemini_file_id
+            document.status = "ready"
+            db.commit()
+            db.refresh(document)
+
+        except Exception as e:
+            document.status = "error"
+            document.error_message = str(e)
+            db.commit()
+            db.refresh(document)
+
+        return DocumentResponse.from_orm(document)
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate document: {str(e)}",
+        )
+
+
 @router.post("/merge", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
 async def merge_documents(
     document_ids: List[int] = Form(...),

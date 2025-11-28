@@ -170,8 +170,24 @@ export const documents = {
     if (folderId) {
       formData.append('folder_id', folderId.toString());
     }
-    
+
     const response = await api.post("/documents/merge", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data;
+  },
+
+  generateFromPrompt: async (prompt: string, language: string = "it", folderId?: number): Promise<Document> => {
+    const formData = new FormData();
+    formData.append('prompt', prompt);
+    formData.append('language', language);
+    if (folderId) {
+      formData.append('folder_id', folderId.toString());
+    }
+
+    const response = await api.post("/documents/generate-from-prompt", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
