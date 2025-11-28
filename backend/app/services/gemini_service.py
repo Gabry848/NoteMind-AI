@@ -568,12 +568,17 @@ Generate the diagram now with {max_nodes} maximum:"""
 
 CRITICAL REQUIREMENTS:
 1. You MUST generate EXACTLY the number of questions specified above - no more, no less
-2. Questions should be clear and unambiguous
-3. Cover different topics from the document(s)
-4. For multiple choice questions, include exactly 4 options where only one is correct
-5. For open-ended questions, provide questions that require substantive answers
-6. ALL text (questions, options, answers) must be in {language_name}
-7. STRICTLY FOLLOW the question count and type distribution specified above
+2. ALL text MUST be in {language_name} - this is MANDATORY (questions, options, correct_answer, everything)
+3. Keep questions SHORT and CONCISE:
+   - Questions: maximum 15-20 words
+   - Multiple choice options: maximum 8-10 words each
+   - Focus on clarity and brevity
+4. Questions should be clear and unambiguous
+5. Cover different topics from the document(s)
+6. For multiple choice questions, include exactly 4 options where only one is correct
+7. For open-ended questions, provide questions that require substantive but concise answers
+8. STRICTLY FOLLOW the question count and type distribution specified above
+9. Every question MUST have a unique ID (q1, q2, q3, etc.)
 
 Return your response in JSON format with the following structure:
 {{
@@ -599,18 +604,26 @@ Return your response in JSON format with the following structure:
   ]
 }}
 
-IMPORTANT: 
+IMPORTANT:
 - Return ONLY the JSON object, no additional text
 - Ensure you generate the EXACT number and types of questions specified
-- Total questions must be exactly {question_count}"""
+- Total questions must be exactly {question_count}
+- EVERYTHING must be written in {language_name} (questions, options, answers)
+- Keep all text SHORT and CONCISE as specified above
+- Every question must have a valid unique ID"""
 
             content_parts = [prompt] + files
+            # Calculate dynamic token limit based on question count
+            # Estimate ~200-300 tokens per question (including options, answers, JSON structure)
+            estimated_tokens = question_count * 300
+            max_tokens = max(4096, min(8192, estimated_tokens + 1000))  # Min 4096, Max 8192, with 1000 buffer
+
             response = self.model.generate_content(
                 content_parts,
                 generation_config=genai.GenerationConfig(
                     temperature=0.7,
                     top_p=0.9,
-                    max_output_tokens=4096,
+                    max_output_tokens=max_tokens,
                 ),
             )
 
@@ -631,6 +644,31 @@ IMPORTANT:
             
             # Validate question count
             questions = quiz_data.get("questions", [])
+
+            # Ensure all questions have required fields and valid IDs
+            validated_questions = []
+            for idx, q in enumerate(questions, 1):
+                # Ensure question has an ID
+                if "id" not in q or not q["id"]:
+                    q["id"] = f"q{idx}"
+
+                # Ensure question has required fields
+                if "question" not in q or "type" not in q:
+                    print(f"Warning: Question {q.get('id', idx)} missing required fields, skipping")
+                    continue
+
+                # For multiple choice, ensure options have IDs
+                if q["type"] == "multiple_choice" and "options" in q:
+                    for opt_idx, opt in enumerate(q["options"]):
+                        if isinstance(opt, dict) and ("id" not in opt or not opt["id"]):
+                            # Assign default option ID if missing
+                            opt["id"] = chr(65 + opt_idx)  # A, B, C, D
+
+                validated_questions.append(q)
+
+            quiz_data["questions"] = validated_questions
+            questions = validated_questions
+
             if len(questions) != question_count:
                 print(f"Warning: Generated {len(questions)} questions but {question_count} were requested")
                 # Trim or pad to match requested count
