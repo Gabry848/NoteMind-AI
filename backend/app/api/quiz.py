@@ -112,8 +112,8 @@ async def generate_quiz(
     quiz_id = str(uuid.uuid4())
     file_ids = [doc.gemini_file_id for doc in documents]
 
-    # Use provided language or user's preferred language
-    quiz_language = quiz_request.language or current_user.preferred_language
+    # Use provided language (defaults to "it" from schema), fallback to user's preferred language, then "it"
+    quiz_language = quiz_request.language or current_user.preferred_language or "it"
     created_at = datetime.utcnow()
 
     # Run quiz generation in a thread pool to avoid blocking

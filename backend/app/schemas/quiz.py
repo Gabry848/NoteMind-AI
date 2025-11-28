@@ -34,8 +34,8 @@ class QuizCreateRequest(BaseModel):
         description="Difficulty level of the quiz"
     )
     language: Optional[str] = Field(
-        default=None,
-        description="Language for quiz questions (it, en, es, fr, de, etc.). If not provided, user's preferred language is used"
+        default="it",
+        description="Language for quiz questions (it, en, es, fr, de, etc.). Defaults to Italian"
     )
 
 
