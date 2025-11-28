@@ -663,6 +663,78 @@ IMPORTANT:
             traceback.print_exc()
             raise Exception(f"Failed to generate quiz: {str(e)}")
 
+    async def generate_content_from_prompt(
+        self,
+        prompt: str,
+        language: str = "it",
+    ) -> str:
+        """
+        Generate document content from a user prompt using AI
+
+        Args:
+            prompt: User's description of what content to generate
+            language: Language for the generated content (it, en, es, fr, de, etc.)
+
+        Returns:
+            Generated markdown content
+        """
+        try:
+            # Language instructions
+            language_names = {
+                "it": "Italian",
+                "en": "English",
+                "es": "Spanish",
+                "fr": "French",
+                "de": "German",
+                "pt": "Portuguese",
+                "ru": "Russian",
+                "zh": "Chinese",
+                "ja": "Japanese",
+                "ko": "Korean",
+            }
+            language_name = language_names.get(language, "Italian")
+
+            system_prompt = f"""You are an expert content writer. Generate comprehensive, well-structured educational content based on the user's request.
+
+REQUIREMENTS:
+1. Write ALL content in {language_name}
+2. Use proper Markdown formatting with:
+   - Clear headings (# ## ###)
+   - Bullet points and numbered lists where appropriate
+   - Bold and italic text for emphasis
+   - Code blocks if relevant
+3. Create detailed, informative content suitable for learning and study
+4. Include:
+   - Introduction explaining the topic
+   - Main sections with detailed explanations
+   - Examples where relevant
+   - Summary or conclusion
+5. Make the content engaging and easy to understand
+6. Length: Aim for comprehensive coverage (at least 500-1000 words)
+7. Format the content in a way that's suitable for creating quizzes and having discussions
+
+User request: {prompt}
+
+Generate the content now in {language_name}:"""
+
+            response = self.model.generate_content(
+                system_prompt,
+                generation_config=genai.GenerationConfig(
+                    temperature=0.8,
+                    top_p=0.95,
+                    top_k=40,
+                    max_output_tokens=8192,
+                ),
+            )
+
+            return response.text
+
+        except Exception as e:
+            print(f"Error in generate_content_from_prompt: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise Exception(f"Failed to generate content: {str(e)}")
+
     async def correct_quiz(
         self,
         file_ids: List[str],

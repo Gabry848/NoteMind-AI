@@ -35,6 +35,10 @@ export default function DocumentsPage() {
   const [showMergeDialog, setShowMergeDialog] = useState(false);
   const [mergeFilename, setMergeFilename] = useState("");
   const [isMerging, setIsMerging] = useState(false);
+  const [showGenerateDialog, setShowGenerateDialog] = useState(false);
+  const [generatePrompt, setGeneratePrompt] = useState("");
+  const [generateLanguage, setGenerateLanguage] = useState("it");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     if (isInitialized && !user) {
@@ -197,7 +201,7 @@ export default function DocumentsPage() {
     try {
       const documentIds = Array.from(selectedDocuments);
       await docsApi.merge(documentIds, mergeFilename || undefined, selectedFolder);
-      
+
       setShowMergeDialog(false);
       setSelectedDocuments(new Set());
       setMergeFilename("");
@@ -208,6 +212,35 @@ export default function DocumentsPage() {
       alert("Failed to merge documents");
     } finally {
       setIsMerging(false);
+    }
+  };
+
+  const handleGenerateDocument = async () => {
+    if (!generatePrompt.trim()) {
+      alert("Please enter a description of what you want to generate");
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const doc = await docsApi.generateFromPrompt(
+        generatePrompt,
+        generateLanguage,
+        selectedFolder
+      );
+
+      setShowGenerateDialog(false);
+      setGeneratePrompt("");
+      await fetchDocuments();
+      alert("Document generated successfully!");
+
+      // Redirect to the new document
+      router.push(`/document/${doc.id}`);
+    } catch (error) {
+      console.error("Failed to generate document:", error);
+      alert("Failed to generate document. Please try again.");
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -284,12 +317,20 @@ export default function DocumentsPage() {
                 </Button>
               )}
             </div>
-            <Button
-              variant="primary"
-              onClick={() => setShowUpload(!showUpload)}
-            >
-              {showUpload ? "Cancel" : "+ Upload Document"}
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                variant="secondary"
+                onClick={() => setShowGenerateDialog(true)}
+              >
+                ✨ Generate from AI
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => setShowUpload(!showUpload)}
+              >
+                {showUpload ? "Cancel" : "+ Upload Document"}
+              </Button>
+            </div>
           </div>
 
           {/* Search and Filters */}
@@ -387,6 +428,89 @@ export default function DocumentsPage() {
           </div>
         )}
       </div>
+
+      {/* Generate from Prompt Dialog */}
+      {showGenerateDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-gray-800 rounded-lg border border-gray-700 p-6 w-full max-w-2xl"
+          >
+            <h3 className="text-xl font-bold text-white mb-4">
+              ✨ Genera Documento con AI
+            </h3>
+
+            <p className="text-gray-300 mb-4">
+              Descrivi cosa vuoi che l'AI generi per te. Ad esempio: "Creami un documento sulle disegnazioni fratte" o "Genera una guida completa su Python per principianti".
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Descrizione del contenuto da generare
+                </label>
+                <textarea
+                  value={generatePrompt}
+                  onChange={(e) => setGeneratePrompt(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px]"
+                  placeholder="Es: Creami un documento completo sulle disegnazioni fratte (frattali) con esempi, spiegazioni e applicazioni pratiche"
+                  autoFocus
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  Sii specifico per ottenere risultati migliori
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Lingua del documento
+                </label>
+                <select
+                  value={generateLanguage}
+                  onChange={(e) => setGenerateLanguage(e.target.value)}
+                  className="w-full px-4 py-2 bg-gray-700 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="it">Italiano</option>
+                  <option value="en">English</option>
+                  <option value="es">Español</option>
+                  <option value="fr">Français</option>
+                  <option value="de">Deutsch</option>
+                  <option value="pt">Português</option>
+                </select>
+              </div>
+
+              <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-3">
+                <p className="text-sm text-blue-300">
+                  💡 Il documento generato sarà in formato Markdown e potrà essere utilizzato per chat e quiz.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setShowGenerateDialog(false);
+                  setGeneratePrompt("");
+                }}
+                className="flex-1"
+                disabled={isGenerating}
+              >
+                Annulla
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleGenerateDocument}
+                className="flex-1"
+                disabled={isGenerating || !generatePrompt.trim()}
+              >
+                {isGenerating ? "Generando..." : "✨ Genera Documento"}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* Merge Dialog */}
       {showMergeDialog && (
