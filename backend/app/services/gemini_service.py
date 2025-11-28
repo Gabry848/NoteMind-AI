@@ -812,7 +812,14 @@ Generate the content now in {language_name}:"""
             prompt = f"""Based on the provided document(s), correct this quiz submission and provide detailed feedback.
 
 Quiz questions and user answers:
-{json.dumps(corrections_needed, indent=2)}
+{json.dumps(corrections_needed, indent=2, ensure_ascii=False)}
+
+CRITICAL JSON FORMATTING RULES:
+1. ALL text in JSON strings MUST have quotes, newlines, and special characters properly escaped
+2. Use ONLY simple characters - avoid complex unicode or emojis in explanations
+3. Keep explanations clear and concise (max 2-3 sentences)
+4. Replace any quotes in text with single quotes or remove them
+5. NO line breaks within JSON string values
 
 For each question:
 1. Evaluate if the user's answer is correct
@@ -823,11 +830,11 @@ For each question:
    - Give credit for partial understanding
    - Accept paraphrasing and different explanations if they capture the main idea
    - Consider the answer correct if it shows the student understood the key points
-4. Provide a clear explanation of the correct answer
+4. Provide a clear, CONCISE explanation of the correct answer
 5. If the answer is wrong or incomplete, explain what was missing or incorrect
 6. Reference specific parts of the document(s) when explaining
 
-Return your response in JSON format:
+Return your response in VALID JSON format:
 {{
   "corrections": [
     {{
@@ -851,23 +858,28 @@ Score guidelines:
   * 0.5-0.6: Answer shows partial understanding
   * 0.0-0.4: Answer is mostly incorrect or missing key concepts
 
-IMPORTANT: For open-ended questions, prioritize understanding over perfection. Don't penalize for different wording or style.
+CRITICAL FORMATTING REQUIREMENTS:
+- Return ONLY valid JSON, no markdown code blocks, no additional text
+- Ensure ALL strings are properly escaped (especially quotes and newlines)
+- Keep explanations SHORT (max 2-3 sentences, no line breaks)
+- Use simple punctuation only
+- Test that the JSON is valid before returning
 
-Return ONLY the JSON object, no additional text."""
+IMPORTANT: For open-ended questions, prioritize understanding over perfection. Don't penalize for different wording or style."""
 
             content_parts = [prompt] + files
             response = self.model.generate_content(
                 content_parts,
                 generation_config=genai.GenerationConfig(
-                    temperature=0.3,  # Lower temperature for more consistent grading
-                    top_p=0.9,
-                    max_output_tokens=4096,
+                    temperature=0.2,  # Very low temperature for more consistent and valid JSON
+                    top_p=0.8,
+                    max_output_tokens=6144,  # Increased for longer corrections
                 ),
             )
 
             # Parse JSON response
             response_text = response.text.strip()
-            
+
             # Remove markdown code blocks if present
             if response_text.startswith("```json"):
                 response_text = response_text[7:]
@@ -875,17 +887,33 @@ Return ONLY the JSON object, no additional text."""
                 response_text = response_text[3:]
             if response_text.endswith("```"):
                 response_text = response_text[:-3]
-            
+
             response_text = response_text.strip()
-            
-            correction_data = json.loads(response_text)
+
+            # Try to parse JSON, with better error handling
+            try:
+                correction_data = json.loads(response_text)
+            except json.JSONDecodeError as parse_error:
+                # Log the problematic JSON for debugging
+                print(f"JSON Parse Error at position {parse_error.pos}: {parse_error.msg}")
+                print(f"Problematic JSON (first 500 chars): {response_text[:500]}")
+                print(f"Context around error: {response_text[max(0, parse_error.pos-50):parse_error.pos+50]}")
+
+                # Try to fix common JSON issues
+                # 1. Replace unescaped newlines in strings
+                import re
+                # This is a simple fix - might not catch all cases
+                fixed_text = response_text.replace('\n', ' ').replace('\r', ' ')
+
+                try:
+                    correction_data = json.loads(fixed_text)
+                    print("Successfully parsed JSON after removing newlines")
+                except json.JSONDecodeError:
+                    # If still fails, raise the original error with more context
+                    raise Exception(f"Failed to parse correction JSON even after cleanup. Original error: {parse_error.msg} at position {parse_error.pos}")
             
             return correction_data
 
-        except json.JSONDecodeError as e:
-            print(f"Failed to parse correction JSON: {str(e)}")
-            print(f"Response text: {response_text}")
-            raise Exception(f"Failed to parse correction response: {str(e)}")
         except Exception as e:
             print(f"Error in correct_quiz: {str(e)}")
             import traceback
