@@ -8,7 +8,7 @@ import api from "@/lib/api";
 export function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
   const { theme, setTheme } = useTheme();
-  const { user, setUser } = useAuthStore();
+  const { user, updateUser } = useAuthStore();
 
   // Ensure component is mounted before rendering to avoid hydration mismatch
   useEffect(() => {
@@ -35,7 +35,7 @@ export function ThemeToggle() {
         const response = await api.put("/auth/me", {
           theme: backendTheme,
         });
-        setUser(response.data);
+        updateUser(response.data);
       } catch (error) {
         console.error("Failed to update theme preference:", error);
       }
