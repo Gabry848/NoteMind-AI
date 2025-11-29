@@ -1,7 +1,7 @@
 """
 Quiz API endpoints
 """
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Request
 from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
@@ -9,6 +9,8 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 import json
 import uuid
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from app.core.database import get_db
 from app.models.user import User
 from app.models.document import Document
@@ -37,6 +39,7 @@ from app.schemas.quiz import (
 )
 
 router = APIRouter(prefix="/quiz", tags=["Quiz"])
+limiter = Limiter(key_func=get_remote_address)
 
 # In-memory storage for quizzes (in production, use database)
 quiz_storage = {}
@@ -68,7 +71,9 @@ def convert_questions_to_dict(questions):
 
 
 @router.post("/generate", response_model=QuizResponse)
+@limiter.limit("10/minute")
 async def generate_quiz(
+    request: Request,
     quiz_request: QuizCreateRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -76,7 +81,10 @@ async def generate_quiz(
     """
     Generate a quiz based on selected documents
 
+    Rate limit: 10 requests per minute per IP
+
     Args:
+        request: HTTP request (for rate limiting)
         quiz_request: Quiz generation request
         current_user: Current authenticated user
         db: Database session

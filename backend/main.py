@@ -3,11 +3,14 @@ NoteMind AI - FastAPI Backend
 Main application entry point
 """
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from app.core.config import settings
 from app.core.database import init_db
-from app.api import auth, documents, chat, summaries, folders, analytics, quiz
+from app.api import auth, documents, chat, summaries, folders, analytics, quiz, quiz_templates
 
 
 @asynccontextmanager
@@ -19,6 +22,9 @@ async def lifespan(app: FastAPI):
     # Shutdown (if needed)
 
 
+# Initialize rate limiter
+limiter = Limiter(key_func=get_remote_address)
+
 # Create FastAPI app
 app = FastAPI(
     title=settings.APP_NAME,
@@ -26,6 +32,10 @@ app = FastAPI(
     description="AI-powered notebook for document analysis and chat",
     lifespan=lifespan,
 )
+
+# Add rate limiter to app state
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Configure CORS
 app.add_middleware(
@@ -44,6 +54,7 @@ app.include_router(chat.router, prefix="/api")
 app.include_router(summaries.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
 app.include_router(quiz.router, prefix="/api")
+app.include_router(quiz_templates.router, prefix="/api")
 
 
 @app.get("/")

@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useDocumentsStore } from "@/store/useDocumentsStore";
 import { Button } from "@/components/Button";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useSettingsStore, isEventMatchingShortcut, prettyShortcut } from "@/store/useSettingsStore";
 import type { Document } from "@/types";
 
@@ -206,10 +207,11 @@ export default function DashboardPage() {
             <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">Beta</span>
           </div>
           <div className="flex items-center gap-4">
-            
+
             <span className="text-gray-300 hidden sm:inline">
               {user?.full_name || user?.email?.split('@')[0]}
             </span>
+              <ThemeToggle />
               <Button
                 variant="ghost"
                 onClick={() => router.push('/settings')}
