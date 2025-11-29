@@ -15,6 +15,7 @@ interface AuthState {
   register: (email: string, password: string, fullName?: string) => Promise<void>;
   logout: () => void;
   checkAuth: () => Promise<void>;
+  updateUser: (user: User) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -74,5 +75,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     } else {
       set({ isInitialized: true });
     }
+  },
+
+  updateUser: (user: User) => {
+    set({ user });
   },
 }));

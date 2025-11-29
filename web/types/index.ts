@@ -7,6 +7,7 @@ export interface User {
   email: string;
   full_name?: string;
   preferred_language: string;
+  theme: string;
   created_at: string;
 }
 

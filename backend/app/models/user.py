@@ -17,6 +17,7 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     full_name = Column(String, nullable=True)
     preferred_language = Column(String(10), default="it", nullable=False)  # Language preference (it, en, es, fr, de)
+    theme = Column(String(10), default="light", nullable=False)  # Theme preference (light, dark, auto)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -24,6 +25,7 @@ class User(Base):
     documents = relationship("Document", back_populates="user", cascade="all, delete-orphan")
     folders = relationship("Folder", back_populates="user", cascade="all, delete-orphan")
     conversations = relationship("Conversation", back_populates="user", cascade="all, delete-orphan")
+    quiz_templates = relationship("QuizTemplate", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<User {self.email}>"

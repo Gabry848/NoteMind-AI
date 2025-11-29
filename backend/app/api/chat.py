@@ -1,10 +1,12 @@
 """
 Chat API endpoints
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from starlette.concurrency import run_in_threadpool
 from datetime import datetime
 from sqlalchemy.orm import Session
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from app.core.database import get_db
 from app.models.user import User
 from app.models.document import Document
@@ -15,10 +17,13 @@ from app.utils.background_tasks import process_chat_response_sync
 from app.schemas.chat import ChatRequest, ChatResponse, ChatMessage, ConversationResponse
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("", response_model=ChatResponse)
+@limiter.limit("30/minute")
 async def send_message(
+    request: Request,
     chat_request: ChatRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -26,7 +31,10 @@ async def send_message(
     """
     Send a chat message (supports single or multiple documents)
 
+    Rate limit: 30 requests per minute per IP
+
     Args:
+        request: HTTP request (for rate limiting)
         chat_request: Chat request data
         current_user: Current authenticated user
         db: Database session

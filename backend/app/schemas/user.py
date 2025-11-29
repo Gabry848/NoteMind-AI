@@ -28,6 +28,7 @@ class UserResponse(BaseModel):
     email: str
     full_name: Optional[str]
     preferred_language: str
+    theme: str
     created_at: datetime
 
     class Config:
@@ -39,6 +40,7 @@ class UserUpdate(BaseModel):
 
     full_name: Optional[str] = None
     preferred_language: Optional[str] = None
+    theme: Optional[str] = None
 
 
 class TokenResponse(BaseModel):

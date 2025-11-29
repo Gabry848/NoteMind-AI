@@ -1,13 +1,15 @@
 """
 Document management API endpoints
 """
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Request
 from fastapi.responses import FileResponse
 from starlette.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pathlib import Path
 import uuid
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from app.core.database import get_db
 from app.core.config import settings
 from app.models.user import User
@@ -17,14 +19,18 @@ from app.utils.dependencies import get_current_user
 from app.utils.file_handler import FileHandler
 from app.services.gemini_service import gemini_service
 from app.services.ocr_service import ocr_service
+from app.services.podcast_service import podcast_service
 from app.utils.background_tasks import process_schema_generation_sync
 from app.schemas.document import DocumentResponse, DocumentListResponse, DocumentUpdate, MermaidSchemaResponse
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("20/minute")
 async def upload_document(
+    request: Request,
     file: UploadFile = File(...),
     folder_id: Optional[int] = None,
     current_user: User = Depends(get_current_user),
@@ -33,7 +39,10 @@ async def upload_document(
     """
     Upload a new document
 
+    Rate limit: 20 requests per minute per IP
+
     Args:
+        request: HTTP request (for rate limiting)
         file: File to upload
         folder_id: Optional folder ID to organize document
         current_user: Current authenticated user
@@ -185,6 +194,57 @@ async def list_documents(
         db.query(Document)
         .filter(Document.user_id == current_user.id)
         .order_by(Document.created_at.desc())
+        .all()
+    )
+
+    return DocumentListResponse(
+        documents=[DocumentResponse.from_orm(doc) for doc in documents],
+        total=len(documents),
+    )
+
+
+@router.get("/search", response_model=DocumentListResponse)
+@limiter.limit("60/minute")
+async def search_documents(
+    request: Request,
+    q: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Search documents by filename or content
+
+    Rate limit: 60 requests per minute per IP
+
+    Args:
+        request: HTTP request (for rate limiting)
+        q: Search query
+        current_user: Current authenticated user
+        db: Database session
+
+    Returns:
+        List of matching documents
+    """
+    if not q or len(q) < 2:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Search query must be at least 2 characters",
+        )
+
+    # Search in filename, original_filename, and summary
+    search_pattern = f"%{q}%"
+
+    documents = (
+        db.query(Document)
+        .filter(
+            Document.user_id == current_user.id,
+            (
+                Document.filename.ilike(search_pattern) |
+                Document.original_filename.ilike(search_pattern) |
+                Document.summary.ilike(search_pattern)
+            )
+        )
+        .order_by(Document.updated_at.desc())
         .all()
     )
 
@@ -747,4 +807,83 @@ async def merge_documents(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to merge documents: {str(e)}",
+        )
+
+
+@router.post("/{document_id}/podcast")
+@limiter.limit("5/hour")
+async def generate_podcast(
+    request: Request,
+    document_id: int,
+    language: str = "it",
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Generate a podcast-style audio conversation from document content
+
+    Rate limit: 5 requests per hour per IP (AI-intensive operation)
+
+    Args:
+        request: HTTP request (for rate limiting)
+        document_id: Document ID
+        language: Target language (default: it)
+        current_user: Current authenticated user
+        db: Database session
+
+    Returns:
+        Podcast script (audio generation in development)
+    """
+    # Verify document belongs to user
+    document = (
+        db.query(Document)
+        .filter(Document.id == document_id, Document.user_id == current_user.id)
+        .first()
+    )
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found",
+        )
+
+    if document.status != "ready":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Document is not ready for podcast generation",
+        )
+
+    # Get document content
+    if document.file_content:
+        file_ext = FileHandler.get_file_extension(document.filename)
+        content = FileHandler.read_file_content_from_bytes(document.file_content, file_ext)
+    else:
+        content = FileHandler.read_file_content(document.file_path)
+
+    if not content or content == "File not found":
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to read document content",
+        )
+
+    try:
+        # Generate podcast script
+        script, _ = await run_in_threadpool(
+            podcast_service.generate_podcast,
+            content,
+            language
+        )
+
+        return {
+            "document_id": document_id,
+            "script": script,
+            "audio_available": False,
+            "message": "Podcast script generated successfully. Audio generation will be available when Gemini 2.5 TTS is fully released.",
+            "info": "For now, you can use the script with external TTS services like Google Cloud Text-to-Speech or ElevenLabs."
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate podcast: {str(e)}",
         )

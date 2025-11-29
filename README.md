@@ -9,6 +9,52 @@ NoteMind AI is a modern, intelligent document analysis tool similar to Google's 
 ![FastAPI](https://img.shields.io/badge/FastAPI-Latest-green?logo=fastapi)
 ![Gemini](https://img.shields.io/badge/Gemini-API-purple)
 
+## 🚀 Quick Start
+
+```bash
+# Clone e avvia con Docker
+git clone https://github.com/Gabry848/NoteMind-AI.git
+cd NoteMind-AI
+./start.sh
+```
+
+Oppure vedi la [**guida completa deployment**](DEPLOYMENT.md) per più opzioni.
+
+---
+
+## 🆕 Nuove Funzionalità (Latest Release)
+
+### ✅ **Auto-Migrazioni Database**
+Il sistema esegue **automaticamente** tutte le migrazioni al primo avvio. Zero configurazione manuale!
+
+### ✅ **Tema Scuro/Chiaro**
+- Toggle tema nell'header dashboard (☀️ / 🌙)
+- Sincronizzazione preferenza con backend
+- Supporto tema automatico (segue il sistema)
+
+### ✅ **Rate Limiting**
+Protezione API contro abuse:
+- Login: 10 tentativi/minuto
+- Chat: 30 messaggi/minuto
+- Quiz: 10 generazioni/minuto
+- Upload: 20 file/minuto
+
+### ✅ **Ricerca Full-Text Documenti**
+Cerca documenti per nome o contenuto con debounce intelligente
+
+### ✅ **Template Quiz Personalizzabili**
+- Salva configurazioni quiz preferite
+- API CRUD completa (`/api/quiz-templates`)
+- Riutilizza impostazioni rapidamente
+
+### ✅ **Generazione Podcast Audio (Preview)**
+Converte documenti in conversazioni audio a 2 voci:
+- Script conversazionale generato con Gemini
+- Preparato per Gemini 2.5 TTS
+- Endpoint: `POST /api/documents/{id}/podcast`
+
+---
+
 ## ✨ Features
 
 ### 📄 Document Management

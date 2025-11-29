@@ -1,8 +1,10 @@
 """
 Authentication API endpoints
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from app.core.database import get_db
 from app.core.security import verify_password, get_password_hash, create_access_token
 from app.models.user import User
@@ -10,14 +12,19 @@ from app.schemas.user import UserRegister, UserLogin, TokenResponse, UserRespons
 from app.utils.dependencies import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-async def register(user_data: UserRegister, db: Session = Depends(get_db)):
+@limiter.limit("5/hour")
+async def register(request: Request, user_data: UserRegister, db: Session = Depends(get_db)):
     """
     Register a new user
 
+    Rate limit: 5 requests per hour per IP
+
     Args:
+        request: HTTP request (for rate limiting)
         user_data: User registration data
         db: Database session
 
@@ -54,11 +61,15 @@ async def register(user_data: UserRegister, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(user_data: UserLogin, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+async def login(request: Request, user_data: UserLogin, db: Session = Depends(get_db)):
     """
     Login user
 
+    Rate limit: 10 requests per minute per IP (prevents brute force)
+
     Args:
+        request: HTTP request (for rate limiting)
         user_data: User login data
         db: Database session
 
@@ -122,7 +133,7 @@ async def update_current_user(
     """
     if user_update.full_name is not None:
         current_user.full_name = user_update.full_name
-    
+
     if user_update.preferred_language is not None:
         # Validate language code
         valid_languages = ["it", "en", "es", "fr", "de", "pt", "ru", "zh", "ja", "ko"]
@@ -132,8 +143,18 @@ async def update_current_user(
                 detail=f"Invalid language code. Supported: {', '.join(valid_languages)}",
             )
         current_user.preferred_language = user_update.preferred_language
-    
+
+    if user_update.theme is not None:
+        # Validate theme
+        valid_themes = ["light", "dark", "auto"]
+        if user_update.theme not in valid_themes:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid theme. Supported: {', '.join(valid_themes)}",
+            )
+        current_user.theme = user_update.theme
+
     db.commit()
     db.refresh(current_user)
-    
+
     return UserResponse.from_orm(current_user)

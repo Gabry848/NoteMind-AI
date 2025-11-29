@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 export const metadata: Metadata = {
   title: "NoteMind AI - Your AI-Powered Research Companion",
@@ -13,11 +14,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className="antialiased font-sans bg-gray-900 text-white">
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+    <html lang="it" suppressHydrationWarning>
+      <body className="antialiased font-sans bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
+        <ThemeProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
