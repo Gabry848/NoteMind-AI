@@ -10,6 +10,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from app.core.config import settings
 from app.core.database import init_db
+from app.core.migrations import run_migrations
 from app.api import auth, documents, chat, summaries, folders, analytics, quiz, quiz_templates
 
 
@@ -17,9 +18,26 @@ from app.api import auth, documents, chat, summaries, folders, analytics, quiz, 
 async def lifespan(app: FastAPI):
     """Application lifespan events"""
     # Startup
+    print("\n🚀 Starting NoteMind AI Backend...")
+
+    # Initialize database
+    print("📊 Initializing database...")
     init_db()
+
+    # Run pending migrations automatically
+    print("🔄 Checking for database migrations...")
+    migration_success = run_migrations()
+
+    if not migration_success:
+        print("⚠️  WARNING: Some migrations failed. Server starting anyway.")
+        print("    Please check the logs above for details.\n")
+
+    print("✅ Server startup complete!\n")
+
     yield
+
     # Shutdown (if needed)
+    print("\n👋 Shutting down NoteMind AI Backend...")
 
 
 # Initialize rate limiter
